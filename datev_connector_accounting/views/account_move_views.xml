@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_move_form_datev" model="ir.ui.view">
+        <field name="name">account.move.form.datev</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form" />
+        <field name="arch" type="xml">
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button
+                    name="action_datev_export_single"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-upload"
+                    attrs="{'invisible': [('state', '!=', 'posted')]}"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">DATEV</span>
+                        <span class="o_stat_text" attrs="{'invisible': [('datev_exported', '=', False)]}">Exported</span>
+                        <span class="o_stat_text" attrs="{'invisible': [('datev_exported', '=', True)]}">Export</span>
+                    </div>
+                </button>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_list_datev" model="ir.ui.view">
+        <field name="name">account.move.list.datev</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_total_signed']" position="after">
+                <field name="datev_exported" optional="show" />
+                <field name="datev_export_date" optional="hide" />
+            </xpath>
+        </field>
+    </record>
+</odoo>

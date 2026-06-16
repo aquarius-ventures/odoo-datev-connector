@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_datev_employee_mapping_hr_manager,datev.employee.mapping hr_manager,model_datev_employee_mapping,hr.group_hr_manager,1,1,1,1
+access_datev_employee_mapping_hr_user,datev.employee.mapping hr_user,model_datev_employee_mapping,hr.group_hr_user,1,0,0,0
+access_datev_payroll_export_wizard_hr_manager,datev.payroll.export.wizard hr_manager,model_datev_payroll_export_wizard,hr.group_hr_manager,1,1,1,0

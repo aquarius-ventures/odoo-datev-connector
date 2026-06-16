@@ -1,0 +1,30 @@
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.pylint.master]
+load-plugins = [
+    "pylint_odoo",
+]
+
+[tool.pylint.odoolint]
+readme-template-url = "https://github.com/OCA/maintainer-tools/blob/master/template/module/README.rst"
+manifest-required-authors = "Aquarius Ventures"
+valid-odoo-versions = ["17.0"]
+
+[tool.pylint."messages control"]
+disable = [
+    "all",
+]
+enable = [
+    "W0101",  # unreachable
+    "W0401",  # wildcard-import
+    "E0001",  # syntax-error
+    "E0102",  # function-redefined
+    "E0103",  # break-outside-loop
+    "E0104",  # return-outside-function
+]

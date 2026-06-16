@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_datev_payroll_export_wizard_form" model="ir.ui.view">
+        <field name="name">datev.payroll.export.wizard.form</field>
+        <field name="model">datev.payroll.export.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Export Payroll to DATEV">
+                <group>
+                    <group string="Period">
+                        <field name="date_from" />
+                        <field name="date_to" />
+                    </group>
+                    <group string="Options">
+                        <field name="export_mode" widget="radio" />
+                        <field name="include_exported" />
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_export" type="object" string="Export" class="btn-primary" />
+                    <button string="Cancel" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_datev_payroll_export_wizard" model="ir.actions.act_window">
+        <field name="name">Export Payroll to DATEV</field>
+        <field name="res_model">datev.payroll.export.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

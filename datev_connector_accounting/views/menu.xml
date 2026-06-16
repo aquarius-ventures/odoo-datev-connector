@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <menuitem
+        id="menu_datev_accounting"
+        name="Accounting"
+        parent="datev_connector.menu_datev_root"
+        sequence="10"
+        groups="account.group_account_user"
+    />
+
+    <menuitem
+        id="menu_datev_export"
+        name="Export to DATEV"
+        parent="menu_datev_accounting"
+        action="action_datev_export_wizard"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_datev_account_mapping"
+        name="Account Mappings"
+        parent="menu_datev_accounting"
+        action="action_datev_account_mapping"
+        sequence="20"
+        groups="account.group_account_manager"
+    />
+</odoo>

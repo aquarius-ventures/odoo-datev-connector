@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <menuitem
+        id="menu_datev_root"
+        name="DATEV"
+        sequence="90"
+        groups="base.group_system"
+    />
+
+    <menuitem
+        id="menu_datev_tokens"
+        name="Connection Tokens"
+        parent="menu_datev_root"
+        action="action_datev_token"
+        sequence="10"
+    />
+</odoo>

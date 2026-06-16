@@ -1,0 +1,20 @@
+{
+    "name": "DATEV Cloud Connector - Accounting",
+    "version": "17.0.1.0.0",
+    "category": "Accounting/Accounting",
+    "summary": "Bidirectional sync of journal entries with DATEV Cloud via EXTF format",
+    "author": "Aquarius Ventures",
+    "website": "https://github.com/aquarius-ventures/odoo-datev-connector",
+    "license": "LGPL-3",
+    "depends": ["datev_connector", "account"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/datev_account_mapping_views.xml",
+        "views/account_move_views.xml",
+        "views/datev_export_wizard_views.xml",
+        "views/menu.xml",
+    ],
+    "installable": True,
+    "application": False,
+    "auto_install": False,
+}
