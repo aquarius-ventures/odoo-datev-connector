@@ -6,7 +6,7 @@
     "author": "Aquarius Ventures",
     "website": "https://github.com/aquarius-ventures/odoo-datev-connector",
     "license": "LGPL-3",
-    "depends": ["datev_connector", "hr", "hr_payroll_community"],
+    "depends": ["datev_connector", "hr", "hr_payroll"],
     "data": [
         "security/ir.model.access.csv",
         "views/datev_employee_mapping_views.xml",
