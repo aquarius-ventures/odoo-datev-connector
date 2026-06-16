@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_datev_token_accountant,datev.token accountant,datev_connector.model_datev_token,account.group_account_manager,1,0,0,0
 access_datev_account_mapping_manager,datev.account.mapping manager,model_datev_account_mapping,account.group_account_manager,1,1,1,1
 access_datev_account_mapping_accountant,datev.account.mapping accountant,model_datev_account_mapping,account.group_account_user,1,0,0,0
 access_datev_export_wizard_accountant,datev.export.wizard accountant,model_datev_export_wizard,account.group_account_user,1,1,1,0

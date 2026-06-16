@@ -1,3 +1,2 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_datev_token_manager,datev.token manager,model_datev_token,base.group_system,1,1,1,1
-access_datev_token_accountant,datev.token accountant,model_datev_token,account.group_account_manager,1,0,0,0
