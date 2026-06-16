@@ -24,7 +24,7 @@
                         type="object"
                         string="Disconnect"
                         class="btn-secondary"
-                        attrs="{'invisible': [('state', '=', 'disconnected')]}"
+                        invisible="state == 'disconnected'"
                     />
                 </header>
                 <sheet>

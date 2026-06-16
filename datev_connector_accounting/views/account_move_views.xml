@@ -11,12 +11,12 @@
                     type="object"
                     class="oe_stat_button"
                     icon="fa-upload"
-                    attrs="{'invisible': [('state', '!=', 'posted')]}"
+                    invisible="state != 'posted'"
                 >
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_text">DATEV</span>
-                        <span class="o_stat_text" attrs="{'invisible': [('datev_exported', '=', False)]}">Exported</span>
-                        <span class="o_stat_text" attrs="{'invisible': [('datev_exported', '=', True)]}">Export</span>
+                        <span class="o_stat_text" invisible="not datev_exported">Exported</span>
+                        <span class="o_stat_text" invisible="datev_exported">Export</span>
                     </div>
                 </button>
             </xpath>
