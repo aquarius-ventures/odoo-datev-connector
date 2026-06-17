@@ -18,6 +18,6 @@
     },
     "images": ["static/description/icon.png"],
     "installable": True,
-    "application": False,
+    "application": True,
     "auto_install": False,
 }

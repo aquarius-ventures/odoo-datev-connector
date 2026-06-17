@@ -6,7 +6,8 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form" />
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app data-string="DATEV Cloud" string="DATEV Cloud" name="datev_connector">
+                <app data-string="DATEV Cloud" string="DATEV Cloud" name="datev_connector"
+                     logo="/datev_connector/static/description/icon.png">
 
                     <block title="Connection" name="datev_connection_block">
                         <setting string="Status" name="datev_status_setting">
