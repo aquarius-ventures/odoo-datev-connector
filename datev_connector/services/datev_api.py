@@ -11,14 +11,16 @@ from odoo.exceptions import UserError
 _logger = logging.getLogger(__name__)
 
 # DATEV OpenID Connect endpoints
+# Both environments use login.datev.de — only the path differs.
+# Discovery: https://login.datev.de/openid/.well-known/openid-configuration
 _OAUTH_BASE = {
     "prod": {
         "auth": "https://login.datev.de/openid/authorize",
         "token": "https://login.datev.de/openid/token",
     },
     "sandbox": {
-        "auth": "https://login.sandbox.datev.de/openid/authorize",
-        "token": "https://login.sandbox.datev.de/openid/token",
+        "auth": "https://login.datev.de/openidsandbox/authorize",
+        "token": "https://login.datev.de/openidsandbox/token",
     },
 }
 
