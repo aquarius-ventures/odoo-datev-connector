@@ -18,11 +18,11 @@ _logger = logging.getLogger(__name__)
 _OAUTH_BASE = {
     "prod": {
         "auth": "https://login.datev.de/openid/authorize",
-        "token": "https://login.datev.de/openid/token",
+        "token": "https://api.datev.de/token",
     },
     "sandbox": {
         "auth": "https://login.datev.de/openidsandbox/authorize",
-        "token": "https://login.datev.de/openidsandbox/token",
+        "token": "https://sandbox-api.datev.de/token",
     },
 }
 
