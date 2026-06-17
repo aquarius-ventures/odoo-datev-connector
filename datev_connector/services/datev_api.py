@@ -1,7 +1,7 @@
 import logging
 import secrets
 import urllib.parse
-from typing import Any
+from typing import Any, Dict, Optional
 
 import requests
 from requests import Response
@@ -108,7 +108,7 @@ class DatevApiService:
             raise UserError("DATEV: Not connected. Please authenticate first.")
         return token.get_valid_access_token()
 
-    def _headers(self, extra: dict | None = None) -> dict:
+    def _headers(self, extra: Optional[Dict] = None) -> dict:
         headers = {
             "Authorization": f"Bearer {self._get_token()}",
             "Content-Type": "application/json",
@@ -118,12 +118,12 @@ class DatevApiService:
             headers.update(extra)
         return headers
 
-    def get(self, path: str, params: dict | None = None) -> Any:
+    def get(self, path: str, params: Optional[Dict] = None) -> Any:
         url = _API_BASE[self._env_key] + path
         resp = self._request("GET", url, params=params)
         return resp.json()
 
-    def post(self, path: str, json: dict | None = None, data: Any = None, headers: dict | None = None) -> Response:
+    def post(self, path: str, json: Optional[Dict] = None, data: Any = None, headers: Optional[Dict] = None) -> Response:
         url = _API_BASE[self._env_key] + path
         return self._request("POST", url, json=json, data=data, extra_headers=headers)
 
@@ -131,10 +131,10 @@ class DatevApiService:
         self,
         method: str,
         url: str,
-        params: dict | None = None,
-        json: dict | None = None,
+        params: Optional[Dict] = None,
+        json: Optional[Dict] = None,
         data: Any = None,
-        extra_headers: dict | None = None,
+        extra_headers: Optional[Dict] = None,
     ) -> Response:
         try:
             resp = requests.request(

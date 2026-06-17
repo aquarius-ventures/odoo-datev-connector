@@ -9,6 +9,7 @@ import csv
 import io
 import logging
 from datetime import date
+from typing import Dict
 
 from odoo.exceptions import UserError
 
@@ -160,7 +161,7 @@ class ExtfGenerator:
         self._company = company
         self._date_from = date_from
         self._date_to = date_to
-        self._mapping_cache: dict[int, str] = {}
+        self._mapping_cache: Dict[int, str] = {}
 
     def generate(self, moves) -> bytes:
         if not moves:
