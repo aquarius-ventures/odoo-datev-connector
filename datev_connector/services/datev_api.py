@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import logging
 import secrets
 import urllib.parse
@@ -32,7 +34,16 @@ _API_BASE = {
 
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
 _STATE_PARAM_KEY = "datev_oauth_state"
+_PKCE_VERIFIER_KEY = "datev_oauth_pkce_verifier"
 _SCOPE = "openid profile datev:accounting:extf-files:read datev:accounting:extf-files:write"
+
+
+def _pkce_pair():
+    """Generate a PKCE code_verifier and code_challenge (S256 method)."""
+    verifier = secrets.token_urlsafe(64)
+    digest = hashlib.sha256(verifier.encode()).digest()
+    challenge = base64.urlsafe_b64encode(digest).rstrip(b"=").decode()
+    return verifier, challenge
 
 
 class DatevApiService:
@@ -45,7 +56,7 @@ class DatevApiService:
         self._env_key = "sandbox" if config.get("sandbox") else "prod"
 
     # ------------------------------------------------------------------
-    # OAuth2 helpers
+    # OAuth2 + PKCE helpers
     # ------------------------------------------------------------------
 
     def _get_base_url(self) -> str:
@@ -53,7 +64,10 @@ class DatevApiService:
 
     def get_authorization_url(self) -> str:
         state = secrets.token_urlsafe(24)
-        self._env["ir.config_parameter"].sudo().set_param(_STATE_PARAM_KEY, state)
+        verifier, challenge = _pkce_pair()
+        ICP = self._env["ir.config_parameter"].sudo()
+        ICP.set_param(_STATE_PARAM_KEY, state)
+        ICP.set_param(_PKCE_VERIFIER_KEY, verifier)
         redirect_uri = self._get_base_url() + _OAUTH_CALLBACK_PATH
         params = {
             "response_type": "code",
@@ -61,23 +75,32 @@ class DatevApiService:
             "redirect_uri": redirect_uri,
             "scope": _SCOPE,
             "state": state,
+            "code_challenge": challenge,
+            "code_challenge_method": "S256",
         }
         return _OAUTH_BASE[self._env_key]["auth"] + "?" + urllib.parse.urlencode(params)
 
     def exchange_code(self, code: str, state: str) -> dict:
-        expected_state = self._env["ir.config_parameter"].sudo().get_param(_STATE_PARAM_KEY)
+        ICP = self._env["ir.config_parameter"].sudo()
+        expected_state = ICP.get_param(_STATE_PARAM_KEY)
         if not secrets.compare_digest(state or "", expected_state or ""):
             raise UserError("DATEV OAuth2: Invalid state parameter.")
+        verifier = ICP.get_param(_PKCE_VERIFIER_KEY)
+        if not verifier:
+            raise UserError("DATEV OAuth2: PKCE verifier missing. Please restart the OAuth flow.")
         redirect_uri = self._get_base_url() + _OAUTH_CALLBACK_PATH
-        return self._token_request(
+        result = self._token_request(
             {
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": redirect_uri,
                 "client_id": self._client_id,
                 "client_secret": self._client_secret,
+                "code_verifier": verifier,
             }
         )
+        ICP.set_param(_PKCE_VERIFIER_KEY, "")
+        return result
 
     def exchange_refresh_token(self, refresh_token: str) -> dict:
         return self._token_request(
