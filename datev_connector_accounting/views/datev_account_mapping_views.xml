@@ -5,6 +5,7 @@
         <field name="model">datev.account.mapping</field>
         <field name="arch" type="xml">
             <tree string="DATEV Account Mappings" editable="bottom">
+                <field name="company_id" column_invisible="1" />
                 <field name="account_id" />
                 <field name="datev_account_number" />
                 <field name="datev_cost_center" optional="show" />
