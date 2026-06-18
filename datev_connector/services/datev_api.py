@@ -35,7 +35,12 @@ _API_BASE = {
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
 _STATE_PARAM_KEY = "datev_oauth_state"
 _PKCE_VERIFIER_KEY = "datev_oauth_pkce_verifier"
-_SCOPE = "openid profile datev:accounting:extf-files:read datev:accounting:extf-files:write"
+_SCOPE = (
+    "openid profile "
+    "datev:accounting:extf-files:read "
+    "datev:accounting:extf-files:write "
+    "datev:accounting:clients:read"
+)
 
 
 def _pkce_pair():
