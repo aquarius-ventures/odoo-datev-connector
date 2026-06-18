@@ -94,8 +94,6 @@ class DatevApiService:
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": redirect_uri,
-                "client_id": self._client_id,
-                "client_secret": self._client_secret,
                 "code_verifier": verifier,
             }
         )
@@ -103,19 +101,21 @@ class DatevApiService:
         return result
 
     def exchange_refresh_token(self, refresh_token: str) -> dict:
-        return self._token_request(
-            {
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
-                "client_id": self._client_id,
-                "client_secret": self._client_secret,
-            }
-        )
+        return self._token_request({"grant_type": "refresh_token", "refresh_token": refresh_token})
 
     def _token_request(self, payload: dict) -> dict:
+        # DATEV requires client_secret_basic: credentials via HTTP Basic Auth,
+        # not in the POST body (client_secret_post).
         url = _OAUTH_BASE[self._env_key]["token"]
         try:
-            resp = requests.post(url, data=payload, timeout=30)
+            resp = requests.post(
+                url,
+                data=payload,
+                auth=(self._client_id, self._client_secret),
+                timeout=30,
+            )
+            if not resp.ok:
+                _logger.error("DATEV token error %s: %s", resp.status_code, resp.text)
             resp.raise_for_status()
         except requests.RequestException as exc:
             raise UserError(f"DATEV token request failed: {exc}") from exc
