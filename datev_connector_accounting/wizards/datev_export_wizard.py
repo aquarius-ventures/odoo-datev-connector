@@ -1,3 +1,4 @@
+import base64
 import logging
 
 from odoo import _, api, fields, models
@@ -80,7 +81,7 @@ class DatevExportWizard(models.TransientModel):
         attachment = self.env["ir.attachment"].create(
             {
                 "name": f"EXTF_Buchungsstapel_{self.date_from}_{self.date_to}.csv",
-                "datas": csv_bytes,
+                "datas": base64.b64encode(csv_bytes),
                 "mimetype": "text/csv",
             }
         )
