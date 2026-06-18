@@ -6,6 +6,7 @@
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
+                <field name="datev_exported" invisible="1" />
                 <button
                     name="action_datev_export_single"
                     type="object"
