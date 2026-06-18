@@ -6,7 +6,7 @@
     "author": "Aquarius Ventures",
     "website": "https://github.com/aquarius-ventures/odoo-datev-connector",
     "license": "LGPL-3",
-    "depends": ["datev_connector", "account"],
+    "depends": ["datev_connector", "account_accountant"],
     "data": [
         "security/ir.model.access.csv",
         "views/datev_account_mapping_views.xml",
