@@ -28,6 +28,19 @@
                         <setting string="Client Secret" name="datev_client_secret_setting">
                             <field name="datev_client_secret" password="True" />
                         </setting>
+                        <setting string="Consultant Number" name="datev_consultant_number_setting"
+                                 help="DATEV Beraternummer (7 digits)">
+                            <field name="datev_consultant_number" />
+                        </setting>
+                        <setting string="Client Number" name="datev_client_number_setting"
+                                 help="DATEV Mandantennummer">
+                            <field name="datev_client_number" />
+                            <button name="action_datev_fetch_clients"
+                                    type="object"
+                                    string="Fetch from DATEV"
+                                    class="btn-secondary"
+                                    invisible="datev_connection_state == 'disconnected'" />
+                        </setting>
                     </block>
 
                     <block title="Actions" name="datev_actions_block">
