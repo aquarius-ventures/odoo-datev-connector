@@ -78,41 +78,25 @@ class ResConfigSettings(models.TransientModel):
             token.action_disconnect()
 
     def action_datev_fetch_clients(self):
-        """Fetch available DATEV clients using Client Credentials (app credentials)."""
+        """Fetch available DATEV clients using the authenticated user token."""
         self.ensure_one()
         config = self._get_datev_config()
-        if not config["client_id"] or not config["client_secret"]:
-            raise UserError(_("Please enter your DATEV Client ID and Client Secret first."))
 
         import requests
+        from ..services.datev_api import DatevApiService
 
         env_key = "sandbox" if config.get("sandbox") else "prod"
-        token_url = {
-            "prod": "https://api.datev.de/token",
-            "sandbox": "https://sandbox-api.datev.de/token",
-        }[env_key]
         clients_url = {
             "prod": "https://accounting-clients.api.datev.de/platform/v2/clients",
             "sandbox": "https://accounting-clients.api.datev.de/platform-sandbox/v2/clients",
         }[env_key]
 
-        # Client Credentials Grant — no user interaction, uses app credentials directly
-        token_resp = requests.post(
-            token_url,
-            data={"grant_type": "client_credentials", "scope": "datev:accounting:clients:read"},
-            auth=(config["client_id"], config["client_secret"]),
-            timeout=30,
-        )
-        if not token_resp.ok:
-            raise UserError(_("DATEV token (client credentials) failed: %s") % token_resp.text)
-
-        app_token = token_resp.json().get("access_token")
-        if not app_token:
-            raise UserError(_("No access token in DATEV response: %s") % token_resp.text)
+        service = DatevApiService(self.env, config)
+        access_token = service._get_token()
 
         resp = requests.get(
             clients_url,
-            headers={"Authorization": f"Bearer {app_token}", "Accept": "application/json"},
+            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
             timeout=30,
         )
         if not resp.ok:
