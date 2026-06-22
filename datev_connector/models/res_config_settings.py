@@ -78,36 +78,54 @@ class ResConfigSettings(models.TransientModel):
             token.action_disconnect()
 
     def action_datev_fetch_clients(self):
-        """Fetch available DATEV clients and let user pick one."""
+        """Fetch available DATEV clients using Client Credentials (app credentials)."""
         self.ensure_one()
         config = self._get_datev_config()
-        from ..services.datev_api import DatevApiService
-
-        service = DatevApiService(self.env, config)
-        env_key = "sandbox" if config.get("sandbox") else "prod"
-        base = {
-            "prod": "https://accounting-clients.api.datev.de/platform/v2",
-            "sandbox": "https://accounting-clients.api.datev.de/platform-sandbox/v2",
-        }[env_key]
+        if not config["client_id"] or not config["client_secret"]:
+            raise UserError(_("Please enter your DATEV Client ID and Client Secret first."))
 
         import requests
-        token = self.env["datev.token"]._get_or_create()
-        access_token = token.get_valid_access_token()
+
+        env_key = "sandbox" if config.get("sandbox") else "prod"
+        token_url = {
+            "prod": "https://login.datev.de/openid/token",
+            "sandbox": "https://login.datev.de/openidsandbox/token",
+        }[env_key]
+        clients_url = {
+            "prod": "https://accounting-clients.api.datev.de/platform/v2/clients",
+            "sandbox": "https://accounting-clients.api.datev.de/platform-sandbox/v2/clients",
+        }[env_key]
+
+        # Client Credentials Grant — no user interaction, uses app credentials directly
+        token_resp = requests.post(
+            token_url,
+            data={"grant_type": "client_credentials", "scope": "datev:accounting:clients:read"},
+            auth=(config["client_id"], config["client_secret"]),
+            timeout=30,
+        )
+        if not token_resp.ok:
+            raise UserError(_("DATEV token (client credentials) failed: %s") % token_resp.text)
+
+        app_token = token_resp.json().get("access_token")
+        if not app_token:
+            raise UserError(_("No access token in DATEV response: %s") % token_resp.text)
+
         resp = requests.get(
-            f"{base}/clients",
-            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+            clients_url,
+            headers={"Authorization": f"Bearer {app_token}", "Accept": "application/json"},
             timeout=30,
         )
         if not resp.ok:
             raise UserError(_("DATEV clients fetch failed: %s") % resp.text)
 
-        clients = resp.json()
-        if not clients:
-            raise UserError(_("No DATEV clients available for your account."))
+        data = resp.json()
+        items = data if isinstance(data, list) else data.get("data", data.get("clients", []))
+        if not items:
+            raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 
         client_list = "\n".join(
-            f"  {c.get('id', '')}  —  {c.get('name', c.get('id', ''))}"
-            for c in (clients if isinstance(clients, list) else clients.get("data", []))
+            f"  {c.get('id', c.get('clientId', ''))}  —  {c.get('name', c.get('clientName', ''))}"
+            for c in items
         )
         return {
             "type": "ir.actions.client",
