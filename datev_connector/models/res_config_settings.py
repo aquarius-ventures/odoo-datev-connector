@@ -88,8 +88,8 @@ class ResConfigSettings(models.TransientModel):
 
         env_key = "sandbox" if config.get("sandbox") else "prod"
         token_url = {
-            "prod": "https://login.datev.de/openid/token",
-            "sandbox": "https://login.datev.de/openidsandbox/token",
+            "prod": "https://api.datev.de/token",
+            "sandbox": "https://sandbox-api.datev.de/token",
         }[env_key]
         clients_url = {
             "prod": "https://accounting-clients.api.datev.de/platform/v2/clients",
