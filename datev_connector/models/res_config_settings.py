@@ -96,7 +96,11 @@ class ResConfigSettings(models.TransientModel):
 
         resp = requests.get(
             clients_url,
-            headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+            headers={
+                "Authorization": f"Bearer {access_token}",
+                "Accept": "application/json",
+                "X-Datev-Client-Id": config["client_id"],
+            },
             timeout=30,
         )
         if not resp.ok:
