@@ -195,8 +195,55 @@ class DatevApiService:
         except requests.RequestException as exc:
             raise UserError(f"DATEV connection error: {exc}") from exc
 
+    def extf_job_status(self, job_url: str) -> dict:
+        """Poll the status of an async EXTF import job.
+
+        Returns a dict with at minimum a '_result' key:
+          'succeeded', 'failed', 'pending', or 'error'.
+        On failure, '_errors' contains a list of error strings.
+        """
+        try:
+            resp = requests.get(
+                job_url,
+                headers={
+                    "Authorization": f"Bearer {self._get_token()}",
+                    "X-DATEV-Client-Id": self._client_id,
+                    "Accept": "application/json;charset=utf-8",
+                },
+                timeout=30,
+            )
+            _logger.info("DATEV job status %s → %s: %s", job_url, resp.status_code, resp.text[:300])
+        except requests.RequestException as exc:
+            _logger.warning("DATEV job status poll failed: %s", exc)
+            return {"_result": "error", "_errors": [str(exc)]}
+
+        if resp.status_code in (202, 404):
+            return {"_result": "pending"}
+        if not resp.ok:
+            return {"_result": "error", "_errors": [f"HTTP {resp.status_code}: {resp.text[:200]}"]}
+
+        try:
+            data = resp.json()
+        except Exception:
+            return {"_result": "error", "_errors": [resp.text[:200]]}
+
+        result_val = data.get("result", "")
+        if result_val == "success":
+            return {"_result": "succeeded", **data}
+
+        errors = data.get("errors") or data.get("messages") or []
+        if isinstance(errors, list):
+            error_strs = [e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errors]
+        else:
+            error_strs = [str(errors)]
+
+        if result_val or error_strs:
+            return {"_result": "failed", "_errors": error_strs, **data}
+
+        return {"_result": "pending"}
+
     # ------------------------------------------------------------------
-    # EXTF file upload
+    # EXTF file upload + job status
     # ------------------------------------------------------------------
 
     def extf_import(self, client_id: str, filename: str, csv_bytes: bytes, reference_id: str = "") -> "Response":

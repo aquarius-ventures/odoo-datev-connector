@@ -7,12 +7,13 @@
         <field name="arch" type="xml">
             <xpath expr="//div[@name='button_box']" position="inside">
                 <field name="datev_exported" invisible="1" />
+                <field name="datev_job_state" invisible="1" />
                 <button
                     name="action_datev_export_single"
                     type="object"
                     class="oe_stat_button"
                     icon="fa-upload"
-                    invisible="state != 'posted'"
+                    invisible="state != 'posted' or datev_job_state == 'pending'"
                 >
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_text">DATEV</span>
@@ -20,6 +21,27 @@
                         <span class="o_stat_text" invisible="datev_exported">Export</span>
                     </div>
                 </button>
+                <button
+                    name="action_datev_refresh_job_status"
+                    type="object"
+                    class="oe_stat_button"
+                    icon="fa-refresh"
+                    invisible="datev_job_state != 'pending'"
+                >
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">DATEV</span>
+                        <span class="o_stat_text">Pending...</span>
+                    </div>
+                </button>
+            </xpath>
+            <xpath expr="//sheet" position="before">
+                <div
+                    class="alert alert-danger mb-0"
+                    role="alert"
+                    invisible="datev_job_state != 'failed'"
+                >
+                    <field name="datev_job_error" readonly="1" />
+                </div>
             </xpath>
         </field>
     </record>
@@ -32,6 +54,14 @@
             <xpath expr="//field[@name='amount_total_signed']" position="after">
                 <field name="datev_exported" optional="show" />
                 <field name="datev_export_date" optional="hide" />
+                <field
+                    name="datev_job_state"
+                    optional="show"
+                    widget="badge"
+                    decoration-success="datev_job_state == 'succeeded'"
+                    decoration-warning="datev_job_state == 'pending'"
+                    decoration-danger="datev_job_state == 'failed'"
+                />
             </xpath>
         </field>
     </record>

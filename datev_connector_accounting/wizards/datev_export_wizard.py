@@ -110,17 +110,33 @@ class DatevExportWizard(models.TransientModel):
         resp = service.extf_import(client_id, filename, csv_bytes)
 
         # 202 Accepted = async job queued successfully
-        job_location = resp.headers.get("Location", "")
+        location_path = resp.headers.get("Location", "")
+        from odoo.addons.datev_connector.services.datev_api import _EXTF_API_BASE
+        env_key = "sandbox" if config.get("sandbox") else "prod"
+        job_url = (
+            _EXTF_API_BASE[env_key] + location_path
+            if location_path and location_path.startswith("/")
+            else location_path
+        )
+
         now = fields.Datetime.now()
-        moves.write({"datev_exported": True, "datev_export_date": now})
+        moves.write({
+            "datev_exported": True,
+            "datev_export_date": now,
+            "datev_job_url": job_url or False,
+            "datev_job_state": "pending" if job_url else False,
+            "datev_job_error": False,
+        })
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
                 "title": _("DATEV Export"),
                 "message": _(
-                    "%d journal entries submitted to DATEV (job: %s)."
-                ) % (len(moves), job_location or "queued"),
+                    "%d journal entries submitted to DATEV. "
+                    "Job status will be updated automatically."
+                ) % len(moves),
                 "type": "success",
+                "sticky": False,
             },
         }

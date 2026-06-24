@@ -9,6 +9,7 @@
     "depends": ["datev_connector", "account_accountant"],
     "data": [
         "security/ir.model.access.csv",
+        "data/ir_cron.xml",
         "views/datev_account_mapping_views.xml",
         "views/account_move_views.xml",
         "views/datev_export_wizard_views.xml",
