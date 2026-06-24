@@ -212,7 +212,7 @@ class DatevApiService:
                 },
                 timeout=30,
             )
-            _logger.info("DATEV job status %s → %s: %s", job_url, resp.status_code, resp.text[:300])
+            _logger.info("DATEV job status %s → %s: %s", job_url, resp.status_code, resp.text)
         except requests.RequestException as exc:
             _logger.warning("DATEV job status poll failed: %s", exc)
             return {"_result": "error", "_errors": [str(exc)]}
@@ -227,7 +227,7 @@ class DatevApiService:
         except Exception:
             return {"_result": "error", "_errors": [resp.text[:200]]}
 
-        result_val = data.get("result", "")
+        result_val = (data.get("result") or "").lower()
         if result_val == "success":
             return {"_result": "succeeded", **data}
 
@@ -237,7 +237,10 @@ class DatevApiService:
         else:
             error_strs = [str(errors)]
 
-        if result_val or error_strs:
+        # Only mark as failed when DATEV explicitly signals failure or returns error details.
+        # Any unknown/in-progress result value (e.g. "processing") stays pending.
+        _FAILURE_RESULTS = {"error", "failed", "rejected", "invalid"}
+        if result_val in _FAILURE_RESULTS or error_strs:
             return {"_result": "failed", "_errors": error_strs, **data}
 
         return {"_result": "pending"}
