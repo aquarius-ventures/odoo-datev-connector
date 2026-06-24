@@ -199,19 +199,25 @@ class DatevApiService:
     # EXTF file upload
     # ------------------------------------------------------------------
 
-    def extf_import(self, client_id: str, filename: str, csv_bytes: bytes) -> "Response":
+    def extf_import(self, client_id: str, filename: str, csv_bytes: bytes, reference_id: str = "") -> "Response":
         """Upload an EXTF Buchungsstapel CSV to DATEV (async — returns 202)."""
         url = _EXTF_API_BASE[self._env_key] + f"/clients/{client_id}/extf-files/import"
+        if not reference_id:
+            import uuid
+            reference_id = str(uuid.uuid4())
         request_headers = {
             "Authorization": "Bearer <token>",
             "X-DATEV-Client-Id": self._client_id,
             "X-DATEV-Client-Secret": "<secret>",
+            "Accept": "application/json;charset=utf-8",
             "Content-Type": "application/octet-stream",
             "Filename": filename,
+            "Reference-Id": reference_id,
+            "Client-Application-Version": "1.0",
         }
         _logger.info(
-            "DATEV EXTF import → POST %s | Filename: %s | payload: %d bytes | headers: %s",
-            url, filename, len(csv_bytes), {k: v for k, v in request_headers.items() if k not in ("Authorization", "X-DATEV-Client-Secret")},
+            "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes",
+            url, filename, reference_id, len(csv_bytes),
         )
         token = self._get_token()
         try:
