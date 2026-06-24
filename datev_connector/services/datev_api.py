@@ -127,7 +127,10 @@ class DatevApiService:
             resp.raise_for_status()
         except requests.RequestException as exc:
             raise UserError(f"DATEV token request failed: {exc}") from exc
-        return resp.json()
+        data = resp.json()
+        granted_scope = data.get("scope", "<not returned by DATEV>")
+        _logger.info("DATEV token granted — scope: %s", granted_scope)
+        return data
 
     # ------------------------------------------------------------------
     # Generic API calls
@@ -199,21 +202,35 @@ class DatevApiService:
     def extf_import(self, client_id: str, filename: str, csv_bytes: bytes) -> "Response":
         """Upload an EXTF Buchungsstapel CSV to DATEV (async — returns 202)."""
         url = _EXTF_API_BASE[self._env_key] + f"/clients/{client_id}/extf-files/import"
+        request_headers = {
+            "Authorization": "Bearer <token>",
+            "X-DATEV-Client-Id": self._client_id,
+            "X-DATEV-Client-Secret": "<secret>",
+            "Content-Type": "application/octet-stream",
+            "Filename": filename,
+        }
+        _logger.info(
+            "DATEV EXTF import → POST %s | Filename: %s | payload: %d bytes | headers: %s",
+            url, filename, len(csv_bytes), {k: v for k, v in request_headers.items() if k not in ("Authorization", "X-DATEV-Client-Secret")},
+        )
+        token = self._get_token()
         try:
             resp = requests.post(
                 url,
                 data=csv_bytes,
                 headers={
-                    "Authorization": f"Bearer {self._get_token()}",
-                    "X-DATEV-Client-Id": self._client_id,
+                    **request_headers,
+                    "Authorization": f"Bearer {token}",
                     "X-DATEV-Client-Secret": self._client_secret,
-                    "Content-Type": "application/octet-stream",
-                    "Filename": filename,
                 },
                 timeout=60,
             )
+            _logger.info(
+                "DATEV EXTF import response: %s | headers: %s | body: %s",
+                resp.status_code, dict(resp.headers), resp.text[:500],
+            )
             if not resp.ok:
-                _logger.error("DATEV EXTF import %s → %s: %s", url, resp.status_code, resp.text)
+                _logger.error("DATEV EXTF import FAILED %s → %s: %s", url, resp.status_code, resp.text)
             resp.raise_for_status()
             return resp
         except requests.HTTPError as exc:
