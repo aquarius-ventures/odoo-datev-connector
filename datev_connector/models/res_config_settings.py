@@ -111,14 +111,19 @@ class ResConfigSettings(models.TransientModel):
         if not items:
             raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 
-        client_list = "\n".join(
-            "  {name}  |  Beraternummer: {berater}  |  Mandantennummer: {mandant}".format(
+        def _fmt_client(c):
+            services = ", ".join(s.get("name", "") for s in c.get("services", [])) or "–"
+            return (
+                "  {name}  |  Beraternummer: {berater}  |  Mandantennummer: {mandant}"
+                "  |  Services: {services}"
+            ).format(
                 name=c.get("name", ""),
                 berater=c.get("consultant_number", ""),
                 mandant=c.get("client_number", ""),
+                services=services,
             )
-            for c in items
-        )
+
+        client_list = "\n".join(_fmt_client(c) for c in items)
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
