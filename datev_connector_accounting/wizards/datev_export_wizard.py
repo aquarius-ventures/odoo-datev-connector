@@ -97,33 +97,30 @@ class DatevExportWizard(models.TransientModel):
         config = self.env["res.config.settings"]._get_datev_config()
         service = DatevApiService(self.env, config)
 
-        client_number = (
-            self.env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.client_number", "")
-        )
-        if not client_number:
+        ICP = self.env["ir.config_parameter"].sudo()
+        consultant_number = ICP.get_param("datev_connector.consultant_number", "")
+        client_number = ICP.get_param("datev_connector.client_number", "")
+        if not consultant_number or not client_number:
             raise UserError(
-                _("Please configure the DATEV Client Number in Settings → DATEV Cloud.")
+                _("Please configure Consultant Number and Client Number in Settings → DATEV Cloud.")
             )
 
-        filename = f"EXTF_Buchungsstapel_{self.date_from}_{self.date_to}.csv"
-        resp = service.post(
-            f"/accounting/extf-files/clients/{client_number}/extf-files/import",
-            data=csv_bytes,
-            headers={"Content-Type": "text/csv; charset=utf-8"},
-        )
+        client_id = f"{consultant_number}-{client_number}"
+        filename = f"EXTF_Buchungsstapel_{self.date_from.strftime('%Y%m%d')}_{self.date_to.strftime('%Y%m%d')}.csv"
+        resp = service.extf_import(client_id, filename, csv_bytes)
 
-        if resp.status_code in (200, 201, 202):
-            now = fields.Datetime.now()
-            moves.write({"datev_exported": True, "datev_export_date": now})
-            return {
-                "type": "ir.actions.client",
-                "tag": "display_notification",
-                "params": {
-                    "title": _("DATEV Export"),
-                    "message": _("%d journal entries exported to DATEV Cloud.") % len(moves),
-                    "type": "success",
-                },
-            }
-        raise UserError(_("DATEV upload failed: %s") % resp.text)
+        # 202 Accepted = async job queued successfully
+        job_location = resp.headers.get("Location", "")
+        now = fields.Datetime.now()
+        moves.write({"datev_exported": True, "datev_export_date": now})
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("DATEV Export"),
+                "message": _(
+                    "%d journal entries submitted to DATEV (job: %s)."
+                ) % (len(moves), job_location or "queued"),
+                "type": "success",
+            },
+        }

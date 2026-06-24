@@ -26,10 +26,14 @@ _OAUTH_BASE = {
     },
 }
 
-# DATEV REST API base URLs
+# DATEV REST API base URLs (per-product — each lives on its own subdomain)
 _API_BASE = {
     "prod": "https://api.datev.de/platform/v1",
     "sandbox": "https://api.datev.de/platform-sandbox/v1",
+}
+_EXTF_API_BASE = {
+    "prod": "https://accounting-extf-files.api.datev.de/platform/v3",
+    "sandbox": "https://accounting-extf-files.api.datev.de/platform-sandbox/v3",
 }
 
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
@@ -37,8 +41,7 @@ _STATE_PARAM_KEY = "datev_oauth_state"
 _PKCE_VERIFIER_KEY = "datev_oauth_pkce_verifier"
 _SCOPE = (
     "openid profile "
-    "datev:accounting:extf-files:read "
-    "datev:accounting:extf-files:write "
+    "datev:accounting:extf-files-import "
     "datev:accounting:clients"
 )
 
@@ -186,5 +189,38 @@ class DatevApiService:
                 body = exc.response.text
             _logger.error("DATEV API %s %s → %s: %s", method, url, exc.response.status_code, body)
             raise UserError(f"DATEV API error {exc.response.status_code}: {body}") from exc
+        except requests.RequestException as exc:
+            raise UserError(f"DATEV connection error: {exc}") from exc
+
+    # ------------------------------------------------------------------
+    # EXTF file upload
+    # ------------------------------------------------------------------
+
+    def extf_import(self, client_id: str, filename: str, csv_bytes: bytes) -> "Response":
+        """Upload an EXTF Buchungsstapel CSV to DATEV (async — returns 202)."""
+        url = _EXTF_API_BASE[self._env_key] + f"/clients/{client_id}/extf-files/import"
+        try:
+            resp = requests.post(
+                url,
+                data=csv_bytes,
+                headers={
+                    "Authorization": f"Bearer {self._get_token()}",
+                    "X-DATEV-Client-Id": self._client_id,
+                    "Content-Type": "application/octet-stream",
+                    "Filename": filename,
+                },
+                timeout=60,
+            )
+            if not resp.ok:
+                _logger.error("DATEV EXTF import %s → %s: %s", url, resp.status_code, resp.text)
+            resp.raise_for_status()
+            return resp
+        except requests.HTTPError as exc:
+            body = ""
+            try:
+                body = exc.response.json()
+            except Exception:
+                body = exc.response.text
+            raise UserError(f"DATEV EXTF upload error {exc.response.status_code}: {body}") from exc
         except requests.RequestException as exc:
             raise UserError(f"DATEV connection error: {exc}") from exc
