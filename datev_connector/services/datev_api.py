@@ -39,7 +39,7 @@ _SCOPE = (
     "openid profile "
     "datev:accounting:extf-files:read "
     "datev:accounting:extf-files:write "
-    "datev:accounting:clients:read"
+    "datev:accounting:clients"
 )
 
 
