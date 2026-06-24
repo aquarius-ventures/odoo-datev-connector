@@ -206,6 +206,7 @@ class DatevApiService:
                 headers={
                     "Authorization": f"Bearer {self._get_token()}",
                     "X-DATEV-Client-Id": self._client_id,
+                    "X-DATEV-Client-Secret": self._client_secret,
                     "Content-Type": "application/octet-stream",
                     "Filename": filename,
                 },
