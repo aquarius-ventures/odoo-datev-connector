@@ -112,7 +112,11 @@ class ResConfigSettings(models.TransientModel):
             raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 
         client_list = "\n".join(
-            f"  {c.get('id', c.get('clientId', ''))}  —  {c.get('name', c.get('clientName', ''))}"
+            "  {name}  |  Beraternummer: {berater}  |  Mandantennummer: {mandant}".format(
+                name=c.get("name", ""),
+                berater=c.get("consultant_number", ""),
+                mandant=c.get("client_number", ""),
+            )
             for c in items
         )
         return {
@@ -120,7 +124,9 @@ class ResConfigSettings(models.TransientModel):
             "tag": "display_notification",
             "params": {
                 "title": _("Available DATEV Clients"),
-                "message": _("Copy the Client Number into the field below:\n%s") % client_list,
+                "message": _(
+                    "Enter Beraternummer and Mandantennummer in the fields above:\n%s"
+                ) % client_list,
                 "type": "info",
                 "sticky": True,
             },

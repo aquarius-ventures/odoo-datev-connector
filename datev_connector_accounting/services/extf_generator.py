@@ -8,7 +8,7 @@ Format version: EXTF 700, record type 21 (Buchungsstapel).
 import csv
 import io
 import logging
-from datetime import date
+from datetime import date, timedelta
 from typing import Dict
 
 from odoo.exceptions import UserError
@@ -204,9 +204,13 @@ class ExtfGenerator:
             .sudo()
             .get_param("datev_connector.client_number", "")
         )
-        fiscal_start = self._company.fiscalyear_last_day or 31
-        fiscal_month = self._company.fiscalyear_last_month or 12
-        fy_start = date(self._date_from.year, int(fiscal_month), int(fiscal_start))
+        fiscal_last_month = int(self._company.fiscalyear_last_month or 12)
+        fiscal_last_day = int(self._company.fiscalyear_last_day or 31)
+        fy_end_in_year = date(self._date_from.year, fiscal_last_month, fiscal_last_day)
+        if self._date_from <= fy_end_in_year:
+            fy_start = date(self._date_from.year - 1, fiscal_last_month, fiscal_last_day) + timedelta(days=1)
+        else:
+            fy_start = fy_end_in_year + timedelta(days=1)
         writer.writerow(
             [
                 "EXTF",
@@ -267,15 +271,21 @@ class ExtfGenerator:
             row[7] = gegenkonto
             row[9] = move.date.strftime("%d%m") if move.date else ""
             row[10] = (move.ref or move.name or "")[:12]
-            row[13] = (line.name or move.name or "")[:60]
+            text = (line.name or move.name or "").replace("\n", " ").replace("\r", "")
+            row[13] = text[:60]
             writer.writerow(row)
 
     def _get_gegenkonto(self, move, current_line) -> str:
-        for line in move.line_ids:
-            if line.id == current_line.id:
-                continue
-            if line.display_type in ("line_section", "line_note"):
-                continue
-            if line.account_id:
-                return self._resolve_account(line.account_id)
-        return ""
+        candidates = [
+            l for l in move.line_ids
+            if l.id != current_line.id
+            and l.display_type not in ("line_section", "line_note")
+            and l.account_id
+            and l.balance != 0
+        ]
+        if not candidates:
+            return ""
+        # Prefer a line with opposite sign — picks AR/AP as gegenkonto for expense/revenue lines
+        opposite = [l for l in candidates if (l.balance > 0) != (current_line.balance > 0)]
+        pool = opposite if opposite else candidates
+        return self._resolve_account(max(pool, key=lambda l: abs(l.balance)).account_id)
