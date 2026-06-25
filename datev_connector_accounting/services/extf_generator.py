@@ -174,7 +174,7 @@ class ExtfGenerator:
         for move in moves:
             self._write_move(writer, move)
         content = output.getvalue()
-        return ("﻿" + content).encode("utf-8")  # BOM required by DATEV
+        return content.encode("utf-8")
 
     def _build_mapping_cache(self):
         mappings = self._env["datev.account.mapping"].search(

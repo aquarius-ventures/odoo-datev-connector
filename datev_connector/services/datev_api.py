@@ -237,6 +237,19 @@ class DatevApiService:
         else:
             error_strs = [str(errors)]
 
+        if not error_strs:
+            validation = data.get("validation_details") or {}
+            title = validation.get("title", "")
+            detail = validation.get("detail", "")
+            affected = validation.get("affected_elements") or []
+            if affected:
+                error_strs = [
+                    f"{title}: {e.get('name', '')} – {e.get('reason', '')}"
+                    for e in affected
+                ]
+            elif title or detail:
+                error_strs = [f"{title}: {detail}".strip(": ")]
+
         # Only mark as failed when DATEV explicitly signals failure or returns error details.
         # Any unknown/in-progress result value (e.g. "processing") stays pending.
         _FAILURE_RESULTS = {"error", "failed", "rejected", "invalid"}
