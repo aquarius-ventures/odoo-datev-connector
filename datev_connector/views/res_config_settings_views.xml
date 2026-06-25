@@ -41,6 +41,10 @@
                                     class="btn-secondary"
                                     invisible="datev_connection_state == 'disconnected'" />
                         </setting>
+                        <setting string="Account Number Length" name="datev_account_number_length_setting"
+                                 help="Digits in DATEV account numbers (Sachkontonummernlänge). SKR03/SKR04 = 4.">
+                            <field name="datev_account_number_length" />
+                        </setting>
                     </block>
 
                     <block title="Actions" name="datev_actions_block">

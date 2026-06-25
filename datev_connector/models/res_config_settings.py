@@ -29,6 +29,12 @@ class ResConfigSettings(models.TransientModel):
         string="Client Number",
         config_parameter="datev_connector.client_number",
     )
+    datev_account_number_length = fields.Selection(
+        [("4", "4"), ("5", "5"), ("6", "6"), ("7", "7"), ("8", "8")],
+        string="Account Number Length",
+        config_parameter="datev_connector.account_number_length",
+        default="4",
+    )
     datev_connection_state = fields.Selection(
         [("disconnected", "Disconnected"), ("connected", "Connected")],
         string="Connection Status",

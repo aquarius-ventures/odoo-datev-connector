@@ -19,7 +19,7 @@ _logger = logging.getLogger(__name__)
 _EXTF_VERSION = 700
 _FORMAT_TYPE = 21  # Buchungsstapel
 _FORMAT_NAME = "Buchungsstapel"
-_FORMAT_VERSION = 7
+_FORMAT_VERSION = 9
 _CREATED_BY_APP = "Odoo DATEV Connector"
 _CONSULTANT_NUMBER_PLACEHOLDER = ""  # filled from company config
 _CLIENT_NUMBER_PLACEHOLDER = ""
@@ -218,7 +218,7 @@ class ExtfGenerator:
             "700",                                        # 2  Versionsnummer (numeric)
             "21",                                         # 3  Datenkategorie (numeric)
             q(_FORMAT_NAME),                              # 4  Formatname (quoted text)
-            "7",                                          # 5  Formatversion (numeric)
+            str(_FORMAT_VERSION),                         # 5  Formatversion (numeric)
             "",                                           # 6  Erzeugungsdatum (empty = set by DATEV on import)
             "",                                           # 7  Importiert
             "",                                           # 8  Herkunft
@@ -227,7 +227,9 @@ class ExtfGenerator:
             consultant_number,                            # 11 Beraternummer
             client_number,                                # 12 Mandantennummer
             fy_start.strftime("%Y%m%d"),                 # 13 WJ-Beginn (numeric)
-            "4",                                          # 14 Sachkontonummernlänge (4 = standard SKR03/SKR04)
+            self._env["ir.config_parameter"].sudo().get_param(
+                "datev_connector.account_number_length", "4"
+            ),                                            # 14 Sachkontonummernlänge
             self._date_from.strftime("%Y%m%d"),          # 15 Von (numeric)
             self._date_to.strftime("%Y%m%d"),            # 16 Bis (numeric)
             "",                                           # 17 Bezeichnung
