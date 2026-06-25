@@ -228,7 +228,7 @@ class DatevApiService:
             return {"_result": "error", "_errors": [resp.text[:200]]}
 
         result_val = (data.get("result") or "").lower()
-        if result_val == "success":
+        if result_val in ("success", "succeeded"):
             return {"_result": "succeeded", **data}
 
         errors = data.get("errors") or data.get("messages") or []
