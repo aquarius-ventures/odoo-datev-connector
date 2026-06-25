@@ -8,7 +8,7 @@ Format version: EXTF 700, record type 21 (Buchungsstapel).
 import csv
 import io
 import logging
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import Dict
 
 from odoo.exceptions import UserError
@@ -168,8 +168,8 @@ class ExtfGenerator:
             raise UserError("No journal entries to export.")
         self._build_mapping_cache()
         output = io.StringIO()
-        writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_NONNUMERIC)
-        self._write_header(writer)
+        self._write_header(output)
+        writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_MINIMAL)
         writer.writerow(self._COLUMNS)
         for move in moves:
             self._write_move(writer, move)
@@ -192,18 +192,17 @@ class ExtfGenerator:
             )
         return number
 
-    def _write_header(self, writer):
-        now = self._env.cr.now() if hasattr(self._env.cr, "now") else date.today()
-        consultant_number = (
-            self._env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.consultant_number", "")
-        )
-        client_number = (
-            self._env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.client_number", "")
-        )
+    def _write_header(self, output):
+        """Write EXTF header row directly to control per-field quoting.
+
+        DATEV requires text fields quoted and numeric fields unquoted.
+        Using csv.writer for this row would over-quote or under-quote,
+        so we build the line manually.
+        """
+        now = self._env.cr.now() if hasattr(self._env.cr, "now") else datetime.now()
+        ICP = self._env["ir.config_parameter"].sudo()
+        consultant_number = ICP.get_param("datev_connector.consultant_number", "")
+        client_number = ICP.get_param("datev_connector.client_number", "")
         fiscal_last_month = int(self._company.fiscalyear_last_month or 12)
         fiscal_last_day = int(self._company.fiscalyear_last_day or 31)
         fy_end_in_year = date(self._date_from.year, fiscal_last_month, fiscal_last_day)
@@ -211,45 +210,38 @@ class ExtfGenerator:
             fy_start = date(self._date_from.year - 1, fiscal_last_month, fiscal_last_day) + timedelta(days=1)
         else:
             fy_start = fy_end_in_year + timedelta(days=1)
-        timestamp = now.strftime("%Y%m%d%H%M%S") if hasattr(now, "strftime") else ""
-        writer.writerow(
-            [
-                "EXTF",          # 1  DATEV-Format-KZ
-                _EXTF_VERSION,   # 2  Versionsnummer (700)
-                _FORMAT_TYPE,    # 3  Datenkategorie (21 = Buchungsstapel)
-                _FORMAT_NAME,    # 4  Formatname
-                _FORMAT_VERSION, # 5  Formatversion (7)
-                timestamp,       # 6  Erzeugungsdatum (YYYYMMDDHHmmss)
-                "",              # 7  Importiert
-                "",              # 8  Herkunft
-                _CREATED_BY_APP, # 9  Exportiert von
-                "",              # 10 Importiert von
-                consultant_number, # 11 Beraternummer
-                client_number,   # 12 Mandantennummer
-                "",              # 13 Sachkontonummernlänge (0 = default)
-                fy_start.strftime("%Y%m%d"),          # 14 WJ-Beginn
-                self._date_from.strftime("%Y%m%d"),   # 15 Von
-                self._date_to.strftime("%Y%m%d"),     # 16 Bis
-                "",              # 17 Bezeichnung
-                "",              # 18 Diktatkürzel
-                1,               # 19 Buchungstyp (1 = Fibu)
-                0,               # 20 Rechnungslegungszweck
-                0,               # 21 Festschreibung
-                self._company.currency_id.name or "EUR",  # 22 WKZ
-                "",              # 23 reserved
-                "",              # 24 Derivatskennzeichen
-                "",              # 25 reserved
-                "",              # 26 reserved
-                "",              # 27 SKR
-                "",              # 28 Branchenlösung-ID
-                "",              # 29 reserved
-                "",              # 30 reserved
-                "",              # 31 reserved
-                "",              # 32 reserved
-                "",              # 33 reserved
-                "",              # 34 Interne Bezeichnung
-            ]
-        )
+
+        ts = now.strftime("%Y%m%d%H%M%S") if hasattr(now, "strftime") else ""
+
+        def q(s):
+            return f'"{s}"'
+
+        fields = [
+            q("EXTF"),                                    # 1  DATEV-Format-KZ (quoted text)
+            "700",                                        # 2  Versionsnummer (numeric)
+            "21",                                         # 3  Datenkategorie (numeric)
+            q(_FORMAT_NAME),                              # 4  Formatname (quoted text)
+            "7",                                          # 5  Formatversion (numeric)
+            ts,                                           # 6  Erzeugungsdatum (numeric, unquoted)
+            "",                                           # 7  Importiert
+            "",                                           # 8  Herkunft
+            q(_CREATED_BY_APP),                          # 9  Exportiert von (quoted text)
+            "",                                           # 10 Importiert von
+            consultant_number,                            # 11 Beraternummer
+            client_number,                                # 12 Mandantennummer
+            "",                                           # 13 Sachkontonummernlänge
+            fy_start.strftime("%Y%m%d"),                 # 14 WJ-Beginn (numeric)
+            self._date_from.strftime("%Y%m%d"),          # 15 Von (numeric)
+            self._date_to.strftime("%Y%m%d"),            # 16 Bis (numeric)
+            "",                                           # 17 Bezeichnung
+            "",                                           # 18 Diktatkürzel
+            "1",                                          # 19 Buchungstyp (numeric)
+            "0",                                          # 20 Rechnungslegungszweck (numeric)
+            "0",                                          # 21 Festschreibung (numeric)
+            q(self._company.currency_id.name or "EUR"),  # 22 WKZ (quoted text)
+            "", "", "", "", "", "", "", "", "", "", "", "",  # 23-34 reserved
+        ]
+        output.write(";".join(fields) + "\r\n")
 
     def _write_move(self, writer, move):
         for line in move.line_ids:
