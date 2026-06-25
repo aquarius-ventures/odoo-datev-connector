@@ -278,9 +278,10 @@ class DatevApiService:
             "Reference-Id": reference_id,
             "Client-Application-Version": "1.0",
         }
+        first_line = csv_bytes.split(b"\n")[0].decode("utf-8", errors="replace")
         _logger.info(
-            "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes",
-            url, filename, reference_id, len(csv_bytes),
+            "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes | first_line: %r",
+            url, filename, reference_id, len(csv_bytes), first_line,
         )
         token = self._get_token()
         try:
