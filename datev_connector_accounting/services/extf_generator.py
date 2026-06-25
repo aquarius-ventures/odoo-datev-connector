@@ -8,7 +8,7 @@ Format version: EXTF 700, record type 21 (Buchungsstapel).
 import csv
 import io
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Dict
 
 from odoo.exceptions import UserError
@@ -199,7 +199,6 @@ class ExtfGenerator:
         Using csv.writer for this row would over-quote or under-quote,
         so we build the line manually.
         """
-        now = self._env.cr.now() if hasattr(self._env.cr, "now") else datetime.now()
         ICP = self._env["ir.config_parameter"].sudo()
         consultant_number = ICP.get_param("datev_connector.consultant_number", "")
         client_number = ICP.get_param("datev_connector.client_number", "")
@@ -211,8 +210,6 @@ class ExtfGenerator:
         else:
             fy_start = fy_end_in_year + timedelta(days=1)
 
-        ts = now.strftime("%Y%m%d%H%M%S") if hasattr(now, "strftime") else ""
-
         def q(s):
             return f'"{s}"'
 
@@ -222,7 +219,7 @@ class ExtfGenerator:
             "21",                                         # 3  Datenkategorie (numeric)
             q(_FORMAT_NAME),                              # 4  Formatname (quoted text)
             "7",                                          # 5  Formatversion (numeric)
-            ts,                                           # 6  Erzeugungsdatum (numeric, unquoted)
+            "",                                           # 6  Erzeugungsdatum (empty = set by DATEV on import)
             "",                                           # 7  Importiert
             "",                                           # 8  Herkunft
             q(_CREATED_BY_APP),                          # 9  Exportiert von (quoted text)
@@ -238,7 +235,7 @@ class ExtfGenerator:
             "1",                                          # 19 Buchungstyp (numeric)
             "0",                                          # 20 Rechnungslegungszweck (numeric)
             "0",                                          # 21 Festschreibung (numeric)
-            q(self._company.currency_id.name or "EUR"),  # 22 WKZ (quoted text)
+            q("EUR"),                                     # 22 WKZ – DATEV always expects EUR
             "", "", "", "", "", "", "", "", "", "", "", "",  # 23-34 reserved
         ]
         output.write(";".join(fields) + "\r\n")
