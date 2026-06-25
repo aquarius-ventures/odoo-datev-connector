@@ -168,7 +168,7 @@ class ExtfGenerator:
             raise UserError("No journal entries to export.")
         self._build_mapping_cache()
         output = io.StringIO()
-        writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+        writer = csv.writer(output, delimiter=";", quoting=csv.QUOTE_NONNUMERIC)
         self._write_header(writer)
         writer.writerow(self._COLUMNS)
         for move in moves:
@@ -211,42 +211,43 @@ class ExtfGenerator:
             fy_start = date(self._date_from.year - 1, fiscal_last_month, fiscal_last_day) + timedelta(days=1)
         else:
             fy_start = fy_end_in_year + timedelta(days=1)
+        timestamp = now.strftime("%Y%m%d%H%M%S") if hasattr(now, "strftime") else ""
         writer.writerow(
             [
-                "EXTF",
-                _EXTF_VERSION,
-                _FORMAT_TYPE,
-                _FORMAT_NAME,
-                _FORMAT_VERSION,
-                "",  # reserved
-                "",  # reserved
-                "",  # reserved
-                "",  # reserved
-                "",  # reserved
-                consultant_number,
-                client_number,
-                "",  # Sachkontonummernlänge (auto)
-                fy_start.strftime("%Y%m%d"),
-                self._date_from.strftime("%Y%m%d"),
-                self._date_to.strftime("%Y%m%d"),
-                "",  # Bezeichnung
-                "",  # Diktatkürzel
-                1,   # Buchungstyp: 1 = Fibu, 2 = Jahresabschluss
-                0,   # Rechnungslegungszweck
-                0,   # Festschreibung: 0 = keine
-                self._company.currency_id.name or "EUR",
-                "",  # reserved
-                "",  # Derivatskennzeichen
-                "",  # reserved
-                "",  # reserved
-                "",  # SKR
-                "",  # Branchenlösung-ID
-                "",  # reserved
-                "",  # reserved
-                _CREATED_BY_APP,
-                "",  # Exportiert von
-                now.strftime("%Y%m%d%H%M%S") if hasattr(now, "strftime") else "",
-                "",  # Interne Bezeichnung
+                "EXTF",          # 1  DATEV-Format-KZ
+                _EXTF_VERSION,   # 2  Versionsnummer (700)
+                _FORMAT_TYPE,    # 3  Datenkategorie (21 = Buchungsstapel)
+                _FORMAT_NAME,    # 4  Formatname
+                _FORMAT_VERSION, # 5  Formatversion (7)
+                timestamp,       # 6  Erzeugungsdatum (YYYYMMDDHHmmss)
+                "",              # 7  Importiert
+                "",              # 8  Herkunft
+                _CREATED_BY_APP, # 9  Exportiert von
+                "",              # 10 Importiert von
+                consultant_number, # 11 Beraternummer
+                client_number,   # 12 Mandantennummer
+                "",              # 13 Sachkontonummernlänge (0 = default)
+                fy_start.strftime("%Y%m%d"),          # 14 WJ-Beginn
+                self._date_from.strftime("%Y%m%d"),   # 15 Von
+                self._date_to.strftime("%Y%m%d"),     # 16 Bis
+                "",              # 17 Bezeichnung
+                "",              # 18 Diktatkürzel
+                1,               # 19 Buchungstyp (1 = Fibu)
+                0,               # 20 Rechnungslegungszweck
+                0,               # 21 Festschreibung
+                self._company.currency_id.name or "EUR",  # 22 WKZ
+                "",              # 23 reserved
+                "",              # 24 Derivatskennzeichen
+                "",              # 25 reserved
+                "",              # 26 reserved
+                "",              # 27 SKR
+                "",              # 28 Branchenlösung-ID
+                "",              # 29 reserved
+                "",              # 30 reserved
+                "",              # 31 reserved
+                "",              # 32 reserved
+                "",              # 33 reserved
+                "",              # 34 Interne Bezeichnung
             ]
         )
 
