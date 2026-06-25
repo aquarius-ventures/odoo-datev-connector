@@ -1,6 +1,6 @@
 {
     "name": "DATEV Cloud Connector - Accounting",
-    "version": "17.0.1.1.4",
+    "version": "17.0.1.1.5",
     "category": "Accounting/Accounting",
     "summary": "Bidirectional sync of journal entries with DATEV Cloud via EXTF format",
     "author": "Aquarius Ventures",

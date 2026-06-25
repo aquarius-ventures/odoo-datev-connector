@@ -226,8 +226,8 @@ class ExtfGenerator:
             "",                                           # 10 Importiert von
             consultant_number,                            # 11 Beraternummer
             client_number,                                # 12 Mandantennummer
-            "",                                           # 13 Sachkontonummernlänge
-            fy_start.strftime("%Y%m%d"),                 # 14 WJ-Beginn (numeric)
+            fy_start.strftime("%Y%m%d"),                 # 13 WJ-Beginn (numeric)
+            "0",                                          # 14 Sachkontenbeschriftung
             self._date_from.strftime("%Y%m%d"),          # 15 Von (numeric)
             self._date_to.strftime("%Y%m%d"),            # 16 Bis (numeric)
             "",                                           # 17 Bezeichnung
