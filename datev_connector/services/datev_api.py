@@ -274,7 +274,7 @@ class DatevApiService:
             "POST", url,
             params={"reference-date": reference_date},
             json=employees,
-            extra_headers={"Target-System": "lodas"},
+            extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
         )
         return resp.json()
 
@@ -285,14 +285,14 @@ class DatevApiService:
             "PUT", url,
             params={"reference-date": reference_date},
             json=employee,
-            extra_headers={"Target-System": "lodas"},
+            extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
         )
         return resp.json()
 
     def hr_exchange_job_status(self, client_id: str, job_uuid: str) -> dict:
         """Poll the state of a hr:exchange async job."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}"
-        resp = self._request("GET", url)
+        resp = self._request("GET", url, extra_headers={"X-DATEV-Client-Id": self._client_id})
         return resp.json()
 
     # ------------------------------------------------------------------
