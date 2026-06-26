@@ -1,0 +1,22 @@
+/* DATEV badge on private-tab fields that feed into LODAS export.
+   The class o_datev_relevant is set on the field widget div via xpath.
+   We target the label in the preceding cell using :has(). */
+
+.o_cell:has(> .o_field_widget.o_datev_relevant) .o_form_label::after,
+.o_wrap_field:has(> .o_field_widget.o_datev_relevant) .o_form_label::after,
+td:has(> .o_field_widget.o_datev_relevant) ~ td .o_form_label::after,
+/* Odoo 17 group grid: label-cell directly before field-cell */
+.o_cell:has(+ .o_cell .o_datev_relevant) .o_form_label::after {
+    content: "DATEV";
+    display: inline-block;
+    background-color: #0d6efd;
+    color: #fff;
+    font-size: 0.60em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    padding: 1px 5px;
+    border-radius: 3px;
+    margin-left: 7px;
+    vertical-align: middle;
+    line-height: 1.6;
+}

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="hr_employee_view_form_datev" model="ir.ui.view">
+        <field name="name">hr.employee.form.datev</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form" />
+        <field name="arch" type="xml">
+
+            <!-- ── DATEV badge auf bestehende Felder im Privat-Tab ────────── -->
+            <xpath expr="//page[@name='private_information']//field[@name='birthday']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='place_of_birth']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='country_of_birth']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='gender']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='marital']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='children']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+            <xpath expr="//page[@name='private_information']//field[@name='ssnid']" position="attributes">
+                <attribute name="class">o_datev_relevant</attribute>
+            </xpath>
+
+            <!-- ── Neuer DATEV / LODAS Tab ────────────────────────────────── -->
+            <xpath expr="//notebook" position="inside">
+                <page string="DATEV / LODAS" name="datev_lodas"
+                      groups="hr.group_hr_user">
+
+                    <group string="Allgemein">
+                        <group>
+                            <field name="datev_personnel_number" />
+                            <field name="datev_cost_center" />
+                        </group>
+                    </group>
+
+                    <group string="Steuer">
+                        <group>
+                            <field name="datev_tax_class" />
+                            <field name="datev_tax_id_number" />
+                        </group>
+                        <group>
+                            <field name="datev_church_tax" />
+                        </group>
+                    </group>
+
+                    <group string="Sozialversicherung">
+                        <group>
+                            <field name="datev_health_insurance_name" />
+                            <field name="datev_health_insurance_type" />
+                        </group>
+                        <group>
+                            <field name="datev_child_allowance" />
+                        </group>
+                    </group>
+
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>
