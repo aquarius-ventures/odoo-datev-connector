@@ -9,7 +9,7 @@
     "depends": ["datev_connector", "hr"],
     "data": [
         "security/ir.model.access.csv",
-        "wizards/datev_employee_sync_wizard_views.xml",
+        "views/datev_employee_sync_wizard_views.xml",
         "views/hr_employee_views.xml",
     ],
     "assets": {
