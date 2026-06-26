@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_datev_employee_sync_wizard_form" model="ir.ui.view">
+        <field name="name">datev.employee.sync.wizard.form</field>
+        <field name="model">datev.employee.sync.wizard</field>
+        <field name="arch" type="xml">
+            <form string="DATEV-Cloud Einstellungen">
+                <sheet>
+                    <group>
+                        <field name="action" widget="radio" />
+                    </group>
+
+                    <group string="Ausgewählte Mitarbeiter">
+                        <field name="employee_ids" nolabel="1" readonly="1"
+                               widget="many2many_tags" />
+                    </group>
+
+                    <!-- Warning: employees with missing required fields -->
+                    <div invisible="not has_missing"
+                         class="alert alert-warning mt-2" role="alert">
+                        <strong>Achtung: Fehlende Pflichtfelder</strong>
+                        <p class="mb-2 mt-1">
+                            Die folgenden Mitarbeiter können nicht übertragen werden,
+                            bis alle Pflichtfelder ausgefüllt sind:
+                        </p>
+                        <field name="missing_fields_html" nolabel="1" />
+                    </div>
+
+                    <field name="has_missing" invisible="1" />
+                </sheet>
+                <footer>
+                    <button string="Ausführen" type="object"
+                            name="action_execute" class="btn-primary" />
+                    <button string="Abbrechen" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_datev_employee_sync_wizard" model="ir.actions.act_window">
+        <field name="name">DATEV-Cloud Einstellungen</field>
+        <field name="res_model">datev.employee.sync.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="hr.model_hr_employee" />
+        <field name="binding_view_types">list</field>
+    </record>
+</odoo>

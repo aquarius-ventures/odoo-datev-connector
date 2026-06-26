@@ -36,6 +36,21 @@
                 <page string="DATEV / LODAS" name="datev_lodas"
                       groups="hr.group_hr_user">
 
+                    <!-- Sync-Status -->
+                    <group string="DATEV Cloud Sync">
+                        <group>
+                            <field name="datev_sync_enabled" widget="boolean_toggle" />
+                            <field name="datev_last_sync" readonly="1"
+                                   invisible="not datev_last_sync" />
+                        </group>
+                    </group>
+
+                    <div class="alert alert-danger mb-3" role="alert"
+                         invisible="not datev_sync_error">
+                        <strong>Sync-Fehler: </strong>
+                        <field name="datev_sync_error" readonly="1" nolabel="1" />
+                    </div>
+
                     <group string="Allgemein">
                         <group>
                             <field name="datev_personnel_number" class="o_datev_required" />
