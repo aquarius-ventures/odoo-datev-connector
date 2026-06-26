@@ -1,16 +1,27 @@
-/* DATEV badge on private-tab fields that feed into LODAS export.
-   The class o_datev_relevant is set on the field widget div via xpath.
-   We target the label in the preceding cell using :has(). */
+/* DATEV field badges in hr.employee form.
+   o_datev_required = Pflichtfeld (green), o_datev_optional = optionales Feld (gray).
+   The class is set on the field widget div; we reach the label via :has(). */
 
-.o_cell:has(> .o_field_widget.o_datev_relevant) .o_form_label::after,
-.o_wrap_field:has(> .o_field_widget.o_datev_relevant) .o_form_label::after,
-td:has(> .o_field_widget.o_datev_relevant) ~ td .o_form_label::after,
-/* Odoo 17 group grid: label-cell directly before field-cell */
-.o_cell:has(+ .o_cell .o_datev_relevant) .o_form_label::after {
+.o_cell:has(+ .o_cell .o_datev_required) .o_form_label::after,
+.o_wrap_label:has(+ .o_wrap_field .o_datev_required) .o_form_label::after {
     content: "DATEV";
-    display: inline-block;
-    background-color: #0d6efd;
+    background-color: #90D033;
     color: #fff;
+}
+
+.o_cell:has(+ .o_cell .o_datev_optional) .o_form_label::after,
+.o_wrap_label:has(+ .o_wrap_field .o_datev_optional) .o_form_label::after {
+    content: "DATEV";
+    background-color: #AFAFAF;
+    color: #fff;
+}
+
+/* shared badge styling */
+.o_cell:has(+ .o_cell .o_datev_required) .o_form_label::after,
+.o_cell:has(+ .o_cell .o_datev_optional) .o_form_label::after,
+.o_wrap_label:has(+ .o_wrap_field .o_datev_required) .o_form_label::after,
+.o_wrap_label:has(+ .o_wrap_field .o_datev_optional) .o_form_label::after {
+    display: inline-block;
     font-size: 0.60em;
     font-weight: 700;
     letter-spacing: 0.04em;

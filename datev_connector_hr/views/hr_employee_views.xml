@@ -6,27 +6,29 @@
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
 
-            <!-- ── DATEV badge auf bestehende Felder im Privat-Tab ────────── -->
+            <!-- ── Pflichtfelder im Personal-Tab (grün) ───────────────────── -->
             <xpath expr="//page[@name='personal_information']//field[@name='birthday']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
-            </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='place_of_birth']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
-            </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='country_of_birth']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
+                <attribute name="class">o_datev_required</attribute>
             </xpath>
             <xpath expr="//page[@name='personal_information']//field[@name='gender']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
-            </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='marital']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
-            </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='children']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
+                <attribute name="class">o_datev_required</attribute>
             </xpath>
             <xpath expr="//page[@name='personal_information']//field[@name='ssnid']" position="attributes">
-                <attribute name="class">o_datev_relevant</attribute>
+                <attribute name="class">o_datev_required</attribute>
+            </xpath>
+
+            <!-- ── Optionale Felder im Personal-Tab (grau) ────────────────── -->
+            <xpath expr="//page[@name='personal_information']//field[@name='place_of_birth']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='country_of_birth']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='marital']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='children']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
             </xpath>
 
             <!-- ── Neuer DATEV / LODAS Tab ────────────────────────────────── -->
@@ -36,28 +38,28 @@
 
                     <group string="Allgemein">
                         <group>
-                            <field name="datev_personnel_number" />
-                            <field name="datev_cost_center" />
+                            <field name="datev_personnel_number" class="o_datev_required" />
+                            <field name="datev_cost_center" class="o_datev_optional" />
                         </group>
                     </group>
 
                     <group string="Steuer">
                         <group>
-                            <field name="datev_tax_class" />
-                            <field name="datev_tax_id_number" />
+                            <field name="datev_tax_class" class="o_datev_required" />
+                            <field name="datev_tax_id_number" class="o_datev_required" />
                         </group>
                         <group>
-                            <field name="datev_church_tax" />
+                            <field name="datev_church_tax" class="o_datev_optional" />
                         </group>
                     </group>
 
                     <group string="Sozialversicherung">
                         <group>
-                            <field name="datev_health_insurance_name" />
-                            <field name="datev_health_insurance_type" />
+                            <field name="datev_health_insurance_name" class="o_datev_required" />
+                            <field name="datev_health_insurance_type" class="o_datev_required" />
                         </group>
                         <group>
-                            <field name="datev_child_allowance" />
+                            <field name="datev_child_allowance" class="o_datev_optional" />
                         </group>
                     </group>
 
