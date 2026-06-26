@@ -7,25 +7,25 @@
         <field name="arch" type="xml">
 
             <!-- ── DATEV badge auf bestehende Felder im Privat-Tab ────────── -->
-            <xpath expr="//page[@name='private_information']//field[@name='birthday']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='birthday']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='place_of_birth']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='place_of_birth']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='country_of_birth']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='country_of_birth']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='gender']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='gender']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='marital']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='marital']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='children']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='children']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
-            <xpath expr="//page[@name='private_information']//field[@name='ssnid']" position="attributes">
+            <xpath expr="//page[@name='personal_information']//field[@name='ssnid']" position="attributes">
                 <attribute name="class">o_datev_relevant</attribute>
             </xpath>
 
