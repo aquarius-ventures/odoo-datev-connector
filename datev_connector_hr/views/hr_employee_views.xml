@@ -42,6 +42,8 @@
                             <field name="datev_sync_enabled" widget="boolean_toggle" />
                             <field name="datev_last_sync" readonly="1"
                                    invisible="not datev_last_sync" />
+                            <field name="datev_sync_created" readonly="1"
+                                   invisible="not datev_sync_created" />
                         </group>
                     </group>
 

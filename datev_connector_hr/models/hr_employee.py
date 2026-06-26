@@ -1,6 +1,7 @@
 import logging
 
 from odoo import api, fields, models
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -32,6 +33,12 @@ class HrEmployee(models.Model):
     _inherit = "hr.employee"
 
     # ── Sync status ─────────────────────────────────────────────────────────
+    datev_sync_created = fields.Boolean(
+        string="In DATEV angelegt",
+        groups="hr.group_hr_user",
+        help="Intern: Gibt an, ob dieser Mitarbeiter bereits per POST in DATEV LODAS angelegt wurde. "
+             "Wird automatisch beim ersten erfolgreichen Transfer gesetzt.",
+    )
     datev_sync_enabled = fields.Boolean(
         string="DATEV Cloud Sync aktiv",
         groups="hr.group_hr_user",
@@ -88,11 +95,13 @@ class HrEmployee(models.Model):
 
     # ── Sozialversicherung ──────────────────────────────────────────────────
     datev_health_insurance_name = fields.Char(
-        string="Krankenkasse",
+        string="Betriebsnr. Krankenkasse",
         groups="hr.group_hr_user",
+        help="8-stellige Betriebsnummer der Krankenkasse (z. B. 87880235). "
+             "Wird als company_number_of_health_insurer an DATEV übermittelt.",
     )
     datev_health_insurance_type = fields.Selection(
-        [("gkv", "GKV – Gesetzlich"), ("pkv", "PKV – Privat")],
+        [("gkv", "GKV – Gesetzlich (Beitragsklasse 1)"), ("pkv", "PKV – Privat (Beitragsklasse 9)")],
         string="Versicherungsart",
         groups="hr.group_hr_user",
     )
@@ -153,21 +162,129 @@ class HrEmployee(models.Model):
                     "DATEV sync failed for employee %s: %s", emp.name, exc
                 )
 
-    def _push_employee_to_datev(self, emp):
-        """Build and submit the LODAS Personalstammdaten payload for one employee.
+    def _build_hr_exchange_payload(self):
+        """Build the hr:exchange JSON payload for a single employee (self.ensure_one())."""
+        self.ensure_one()
 
-        DATEV LODAS REST API endpoint and exact payload format to be confirmed
-        once the API product subscription is active in the developer portal.
-        """
-        # TODO: replace with actual DATEV LODAS API call once endpoint is known.
-        # Expected flow:
-        #   1. Generate LODAS Stammsatz content (reuse LodasGenerator)
-        #   2. POST to https://lodas.api.datev.de/... (sandbox / prod)
-        #   3. Poll or handle synchronous response
+        # ── Name splitting: "Maria Schmidt" → first_name="Maria", surname="Schmidt" ──
+        name_parts = (self.name or "").strip().split()
+        surname = name_parts[-1] if name_parts else "Unbekannt"
+        first_name = " ".join(name_parts[:-1]) if len(name_parts) > 1 else None
+
+        # ── Gender ──────────────────────────────────────────────────────────
+        gender_map = {"male": "M", "female": "W", "other": "D"}
+        sex = gender_map.get(self.gender or "", "D")
+
+        # ── Church tax denomination (only values the DATEV API accepts) ──────
+        _VALID_DENOMINATION = {
+            "ak", "ev", "fa", "fb", "fg", "fm", "fr", "fs",
+            "ib", "ih", "il", "is", "iw", "jd", "jh", "lt", "rf", "rk",
+        }
+        denomination = self.datev_church_tax if self.datev_church_tax in _VALID_DENOMINATION else None
+
+        # ── Personnel number must be integer 1–99999 ─────────────────────────
+        try:
+            personnel_number = int(self.datev_personnel_number or "0")
+            if not (1 <= personnel_number <= 99999):
+                raise ValueError()
+        except (ValueError, TypeError):
+            raise UserError(
+                f"Ungültige Personalnummer '{self.datev_personnel_number}' — "
+                "muss eine Ganzzahl zwischen 1 und 99999 sein."
+            )
+
+        # ── Health insurance contribution class mapping ───────────────────────
+        # GKV (gesetzlich) → Beitragsklasse 1; PKV (privat) → Beitragsklasse 9
+        health_class_map = {"gkv": 1, "pkv": 9}
+        health_contrib = health_class_map.get(self.datev_health_insurance_type or "", 1)
+
+        # ── Build payload ────────────────────────────────────────────────────
+        payload = {
+            "surname": surname,
+            "personnel_number": personnel_number,
+        }
+        if first_name:
+            payload["first_name"] = first_name
+
+        personal_data = {"sex": sex}
+        if self.birthday:
+            personal_data["date_of_birth"] = self.birthday.strftime("%Y-%m-%d")
+        if self.ssnid:
+            personal_data["social_security_number"] = self.ssnid
+        if self.place_of_birth:
+            personal_data["place_of_birth"] = self.place_of_birth[:34]
+        payload["personal_data"] = personal_data
+
+        tax_card = {}
+        if self.datev_tax_class:
+            tax_card["tax_class"] = self.datev_tax_class
+        if denomination:
+            tax_card["denomination"] = denomination
+        if self.datev_child_allowance:
+            tax_card["child_tax_allowances"] = self.datev_child_allowance
+        if tax_card:
+            payload["tax_card"] = tax_card
+
+        taxation = {"employment_type": 1, "flat_rate_tax": 0}
+        if self.datev_tax_id_number:
+            taxation["tax_identification_number"] = self.datev_tax_id_number
+        payload["taxation"] = taxation
+
+        social_insurance = {
+            "contribution_class_health_insurance": health_contrib,
+            "contribution_class_nursing_insurance": 1,
+            "contribution_class_pension_insurance": 1,
+            "contribution_class_unemployment_insurance": 1,
+            "is_additional_contribution_to_nursing_insurance_for_childless_ignored": False,
+        }
+        if self.datev_health_insurance_name:
+            social_insurance["company_number_of_health_insurer"] = self.datev_health_insurance_name[:8]
+        payload["social_insurance"] = social_insurance
+
+        if self.datev_cost_center:
+            payload["activity"] = {"individual_cost_center_id": self.datev_cost_center[:13]}
+
+        return payload
+
+    def _push_employee_to_datev(self, emp):
+        """Submit employee master data to the DATEV hr:exchange API (async job)."""
+        ICP = self.env["ir.config_parameter"].sudo()
+        consultant = ICP.get_param("datev_connector.consultant_number", "")
+        client_nr = ICP.get_param("datev_connector.client_number", "")
+        if not consultant or not client_nr:
+            raise UserError(
+                "DATEV: Bitte Berater- und Mandantennummer in den Einstellungen hinterlegen."
+            )
+
+        datev_client_id = f"{consultant}-{client_nr}"
+        reference_date = fields.Date.today().strftime("%Y-%m")
+
+        config = self.env["res.config.settings"]._get_datev_config()
+
+        from odoo.addons.datev_connector.services.datev_api import DatevApiService
+
+        service = DatevApiService(self.env, config)
+        payload = emp._build_hr_exchange_payload()
+
+        if emp.datev_sync_created:
+            job = service.hr_exchange_put_employee(
+                datev_client_id,
+                emp.datev_personnel_number,
+                payload,
+                reference_date,
+            )
+        else:
+            job = service.hr_exchange_post_employees(
+                datev_client_id,
+                [payload],
+                reference_date,
+            )
+            emp.write({"datev_sync_created": True})
+
         _logger.info(
-            "DATEV LODAS push (stub): %s | Personalnr=%s | Steuerklasse=%s | SV=%s",
+            "DATEV hr:exchange job accepted: emp=%s (Personalnr. %s) | job_id=%s | state=%s",
             emp.name,
             emp.datev_personnel_number,
-            emp.datev_tax_class,
-            emp.ssnid,
+            job.get("id"),
+            job.get("state"),
         )

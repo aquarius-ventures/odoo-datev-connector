@@ -35,6 +35,10 @@ _EXTF_API_BASE = {
     "prod": "https://accounting-extf-files.api.datev.de/platform/v3",
     "sandbox": "https://accounting-extf-files.api.datev.de/platform-sandbox/v3",
 }
+_HR_EXCHANGE_API_BASE = {
+    "prod": "https://hr-exchange.api.datev.de/platform/v1",
+    "sandbox": "https://hr-exchange.api.datev.de/platform-sandbox/v1",
+}
 
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
 _STATE_PARAM_KEY = "datev_oauth_state"
@@ -42,7 +46,8 @@ _PKCE_VERIFIER_KEY = "datev_oauth_pkce_verifier"
 _SCOPE = (
     "openid profile "
     "datev:accounting:extf-files-import "
-    "datev:accounting:clients"
+    "datev:accounting:clients "
+    "datev:hr:payrolldataexchange"
 )
 
 
@@ -257,6 +262,38 @@ class DatevApiService:
             return {"_result": "failed", "_errors": error_strs, **data}
 
         return {"_result": "pending"}
+
+    # ------------------------------------------------------------------
+    # HR Exchange (Personalstammdaten)
+    # ------------------------------------------------------------------
+
+    def hr_exchange_post_employees(self, client_id: str, employees: list, reference_date: str) -> dict:
+        """Create new employees in DATEV LODAS (async — returns 202 job)."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/employees"
+        resp = self._request(
+            "POST", url,
+            params={"reference-date": reference_date},
+            json=employees,
+            extra_headers={"Target-System": "lodas"},
+        )
+        return resp.json()
+
+    def hr_exchange_put_employee(self, client_id: str, personnel_number: str, employee: dict, reference_date: str) -> dict:
+        """Update an existing employee in DATEV LODAS (async — returns 202 job)."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/employees/{personnel_number}"
+        resp = self._request(
+            "PUT", url,
+            params={"reference-date": reference_date},
+            json=employee,
+            extra_headers={"Target-System": "lodas"},
+        )
+        return resp.json()
+
+    def hr_exchange_job_status(self, client_id: str, job_uuid: str) -> dict:
+        """Poll the state of a hr:exchange async job."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}"
+        resp = self._request("GET", url)
+        return resp.json()
 
     # ------------------------------------------------------------------
     # EXTF file upload + job status
