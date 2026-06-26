@@ -55,6 +55,25 @@ class HrEmployee(models.Model):
         readonly=True,
         groups="hr.group_hr_user",
     )
+    datev_job_id = fields.Char(
+        string="DATEV Job-ID",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+    )
+    datev_job_state = fields.Selection(
+        [("pending", "Pending"), ("succeeded", "Succeeded"), ("failed", "Failed")],
+        string="DATEV Job-Status",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+    )
+    datev_job_error = fields.Text(
+        string="DATEV Job-Fehler",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+    )
 
     # ── Allgemein ───────────────────────────────────────────────────────────
     datev_personnel_number = fields.Char(
@@ -281,10 +300,58 @@ class HrEmployee(models.Model):
             )
             emp.write({"datev_sync_created": True})
 
+        job_id = job.get("id")
         _logger.info(
             "DATEV hr:exchange job accepted: emp=%s (Personalnr. %s) | job_id=%s | state=%s",
-            emp.name,
-            emp.datev_personnel_number,
-            job.get("id"),
-            job.get("state"),
+            emp.name, emp.datev_personnel_number, job_id, job.get("state"),
         )
+        emp.write({"datev_job_id": job_id, "datev_job_state": "pending", "datev_job_error": False})
+
+    def action_datev_refresh_job_status(self):
+        pending = self.filtered(lambda e: e.datev_job_id and e.datev_job_state == "pending")
+        if not pending:
+            raise UserError("Keine offenen DATEV-Jobs für die ausgewählten Mitarbeiter.")
+        pending._poll_datev_hr_jobs()
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {"title": "DATEV Job-Status", "message": "Status aktualisiert.", "type": "info"},
+        }
+
+    @api.model
+    def _cron_poll_datev_hr_jobs(self):
+        pending = self.search([("datev_job_id", "!=", False), ("datev_job_state", "=", "pending")])
+        if pending:
+            pending._poll_datev_hr_jobs()
+
+    def _poll_datev_hr_jobs(self):
+        ICP = self.env["ir.config_parameter"].sudo()
+        consultant = ICP.get_param("datev_connector.consultant_number", "")
+        client_nr = ICP.get_param("datev_connector.client_number", "")
+        datev_client_id = f"{consultant}-{client_nr}"
+        config = self.env["res.config.settings"]._get_datev_config()
+        from odoo.addons.datev_connector.services.datev_api import DatevApiService
+        service = DatevApiService(self.env, config)
+
+        _FINAL_STATES = {"succeeded", "failed", "rejected", "error"}
+        for emp in self:
+            try:
+                result = service.hr_exchange_job_status(datev_client_id, emp.datev_job_id)
+            except Exception as exc:
+                _logger.warning("DATEV hr:exchange job poll failed for %s: %s", emp.name, exc)
+                continue
+            state = (result.get("state") or "").lower()
+            if state not in _FINAL_STATES:
+                continue
+            outcome = "succeeded" if state == "succeeded" else "failed"
+            errors = result.get("errors") or result.get("messages") or []
+            if isinstance(errors, list):
+                error_str = "\n".join(
+                    e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errors
+                ) or False
+            else:
+                error_str = str(errors) or False
+            emp.write({"datev_job_state": outcome, "datev_job_error": error_str})
+            _logger.info(
+                "DATEV hr:exchange job %s → %s: emp=%s", emp.datev_job_id, outcome, emp.name
+            )

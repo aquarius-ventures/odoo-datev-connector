@@ -45,12 +45,29 @@
                             <field name="datev_sync_created" readonly="1"
                                    invisible="not datev_sync_created" />
                         </group>
+                        <group>
+                            <field name="datev_job_state" readonly="1"
+                                   widget="badge"
+                                   decoration-warning="datev_job_state == 'pending'"
+                                   decoration-success="datev_job_state == 'succeeded'"
+                                   decoration-danger="datev_job_state == 'failed'"
+                                   invisible="not datev_job_state" />
+                            <button name="action_datev_refresh_job_status" type="object"
+                                    string="Status abrufen" class="btn-secondary btn-sm"
+                                    invisible="datev_job_state != 'pending'" />
+                        </group>
                     </group>
 
                     <div class="alert alert-danger mb-3" role="alert"
                          invisible="not datev_sync_error">
                         <strong>Sync-Fehler: </strong>
                         <field name="datev_sync_error" readonly="1" nolabel="1" />
+                    </div>
+
+                    <div class="alert alert-danger mb-3" role="alert"
+                         invisible="datev_job_state != 'failed'">
+                        <strong>Job-Fehler: </strong>
+                        <field name="datev_job_error" readonly="1" nolabel="1" />
                     </div>
 
                     <group string="Allgemein">

@@ -1,6 +1,6 @@
 {
     "name": "DATEV Cloud Connector - HR / Personalstammdaten",
-    "version": "17.0.1.0.4",
+    "version": "17.0.1.0.5",
     "category": "Human Resources",
     "summary": "DATEV-Felder auf dem Mitarbeiter: Steuerklasse, SV-Nr., Personalnummer u. a.",
     "author": "Aquarius Ventures",
@@ -9,6 +9,7 @@
     "depends": ["datev_connector", "hr"],
     "data": [
         "security/ir.model.access.csv",
+        "data/ir_cron.xml",
         "views/datev_employee_sync_wizard_views.xml",
         "views/hr_employee_views.xml",
     ],
