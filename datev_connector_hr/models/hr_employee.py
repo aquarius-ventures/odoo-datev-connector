@@ -1,9 +1,32 @@
+import json
 import logging
+import os
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
+
+# DATEV "Staatsangehörigkeitsschlüssel" (DEÜV / Destatis-BEV) keyed by ISO 3166-1
+# alpha-2 (= Odoo res.country.code). Loaded once from the shipped JSON mapping.
+_COUNTRY_OF_BIRTH_MAPPING = None
+
+
+def _country_of_birth_code(iso_alpha2):
+    """Return the 3-digit DATEV country-of-birth key for an ISO alpha-2 code, or None."""
+    global _COUNTRY_OF_BIRTH_MAPPING
+    if _COUNTRY_OF_BIRTH_MAPPING is None:
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "data", "datev_country_of_birth_mapping.json",
+        )
+        try:
+            with open(path, encoding="utf-8") as fh:
+                _COUNTRY_OF_BIRTH_MAPPING = json.load(fh).get("mapping", {})
+        except Exception as exc:  # pragma: no cover - defensive
+            _logger.error("DATEV: could not load country_of_birth mapping: %s", exc)
+            _COUNTRY_OF_BIRTH_MAPPING = {}
+    return _COUNTRY_OF_BIRTH_MAPPING.get((iso_alpha2 or "").upper())
 
 _DATEV_REQUIRED_FIELDS = {
     "birthday": "Geburtsdatum",
@@ -232,6 +255,15 @@ class HrEmployee(models.Model):
             personal_data["social_security_number"] = self.ssnid
         if self.place_of_birth:
             personal_data["place_of_birth"] = self.place_of_birth[:34]
+        if self.country_of_birth:
+            datev_country = _country_of_birth_code(self.country_of_birth.code)
+            if not datev_country:
+                raise UserError(
+                    f"Kein DATEV-Staatsangehörigkeitsschlüssel für Geburtsland "
+                    f"'{self.country_of_birth.name}' ({self.country_of_birth.code}) hinterlegt. "
+                    "Bitte Mapping ergänzen oder Geburtsland korrigieren."
+                )
+            personal_data["country_of_birth"] = datev_country
         payload["personal_data"] = personal_data
 
         tax_card = {}
