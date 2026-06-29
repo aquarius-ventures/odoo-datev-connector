@@ -124,3 +124,54 @@ class TestHrExchangePayload(TransactionCase):
         bogus = self.env["res.country"].sudo().create({"name": "Testland", "code": "QZ"})
         with self.assertRaises(UserError):
             self._make_emp(country_of_birth=bogus.id)._build_hr_exchange_payload()
+
+    # ── Address ──────────────────────────────────────────────────────────────
+    def test_address_mapped(self):
+        emp = self._make_emp(
+            private_street="Roonstr. 101",
+            private_zip="90329",
+            private_city="Nürnberg",
+            private_country_id=self.de.id,
+        )
+        addr = emp._build_hr_exchange_payload()["address"]
+        self.assertEqual(addr["street"], "Roonstr.")
+        self.assertEqual(addr["house_number"], "101")
+        self.assertEqual(addr["postal_code"], "90329")
+        self.assertEqual(addr["city"], "Nürnberg")
+        self.assertEqual(addr["country"], "D")
+
+    def test_address_skipped_when_country_unmapped(self):
+        emp = self._make_emp(
+            private_street="Main St 1",
+            private_zip="12345",
+            private_country_id=self.env.ref("base.us").id,  # not in _ADDRESS_COUNTRY_MAP
+        )
+        self.assertNotIn("address", emp._build_hr_exchange_payload())
+
+    def test_address_skipped_when_no_postal_code(self):
+        emp = self._make_emp(private_street="Roonstr. 1", private_country_id=self.de.id)
+        self.assertNotIn("address", emp._build_hr_exchange_payload())
+
+    def test_split_street_house(self):
+        Emp = self.env["hr.employee"]
+        self.assertEqual(Emp._split_street_house("Roonstr. 101"), ("Roonstr.", "101"))
+        self.assertEqual(Emp._split_street_house("Auf der Schanz 78a"), ("Auf der Schanz", "78a"))
+        self.assertEqual(Emp._split_street_house("Hauptstraße"), ("Hauptstraße", None))
+
+    # ── Bank account (IBAN / BIC) ────────────────────────────────────────────
+    def test_iban_and_bic(self):
+        bank = self.env["res.bank"].create({"name": "Commerzbank", "bic": "COBADEFF760"})
+        partner = self.env["res.partner"].create({"name": "EE Bankinhaber"})
+        acc = self.env["res.partner.bank"].create({
+            "acc_number": "DE94 7604 0061 0524 3712 00",
+            "partner_id": partner.id,
+            "bank_id": bank.id,
+        })
+        emp = self._make_emp()
+        emp.sudo().write({"bank_account_id": acc.id})
+        account = emp._build_hr_exchange_payload()["account"]
+        self.assertEqual(account["iban"], "DE94760400610524371200")
+        self.assertEqual(account["bic"], "COBADEFF760")
+
+    def test_no_account_when_no_bank(self):
+        self.assertNotIn("account", self._make_emp()._build_hr_exchange_payload())

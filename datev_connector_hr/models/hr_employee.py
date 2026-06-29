@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -55,6 +56,11 @@ _DATEV_SYNC_FIELDS = frozenset(_DATEV_REQUIRED_FIELDS) | {
     "datev_si_pension",
     "datev_si_unemployment",
     "datev_si_childless_surcharge",
+    "private_street",
+    "private_city",
+    "private_zip",
+    "private_country_id",
+    "bank_account_id",
 }
 
 # DATEV hr:exchange job lifecycle. The API documents `state` only as a free string
@@ -62,6 +68,15 @@ _DATEV_SYNC_FIELDS = frozenset(_DATEV_REQUIRED_FIELDS) | {
 # any unknown/in-progress state as still pending, so a job is never prematurely closed.
 _JOB_SUCCESS_STATES = {"succeeded", "success", "successful", "completed", "done", "finished"}
 _JOB_FAILURE_STATES = {"failed", "failure", "rejected", "error", "errored", "cancelled", "canceled"}
+
+# DATEV address country codes (LODAS "Länderkennzeichen") keyed by ISO 3166-1 alpha-2.
+# This is a DIFFERENT code system than the country_of_birth Staatsangehörigkeitsschlüssel.
+# Only verified entries are listed; extend with the authoritative DATEV list as needed.
+# Addresses whose country is not mapped are skipped (logged), not sent with a wrong code.
+_ADDRESS_COUNTRY_MAP = {
+    "DE": "D",
+    "AT": "A",
+}
 
 
 class HrEmployee(models.Model):
@@ -376,7 +391,48 @@ class HrEmployee(models.Model):
         if self.datev_cost_center:
             payload["activity"] = {"individual_cost_center_id": self.datev_cost_center[:13]}
 
+        # ── Address (optional; only sent when country + postal_code are present) ──
+        addr = {}
+        if self.private_street:
+            street, house = self._split_street_house(self.private_street)
+            addr["street"] = street[:34]
+            if house:
+                addr["house_number"] = house[:9]
+        if self.private_city:
+            addr["city"] = self.private_city[:34]
+        if self.private_zip:
+            addr["postal_code"] = self.private_zip[:10]
+        if self.private_country_id:
+            country_code = _ADDRESS_COUNTRY_MAP.get((self.private_country_id.code or "").upper())
+            if country_code:
+                addr["country"] = country_code
+            else:
+                _logger.warning(
+                    "DATEV: address skipped for %s — no DATEV country code mapped for %s (%s).",
+                    self.name, self.private_country_id.name, self.private_country_id.code,
+                )
+        # DATEV Address schema requires both country and postal_code.
+        if addr.get("country") and addr.get("postal_code"):
+            payload["address"] = addr
+
+        # ── Bank account (IBAN / BIC) ────────────────────────────────────────
+        bank = self.bank_account_id
+        if bank and bank.acc_number:
+            account = {"iban": bank.acc_number.replace(" ", "").upper()}
+            bic = bank.bank_id.bic if bank.bank_id else None
+            if bic:
+                account["bic"] = bic.replace(" ", "").upper()
+            payload["account"] = account
+
         return payload
+
+    @staticmethod
+    def _split_street_house(street):
+        """Split 'Roonstr. 101' → ('Roonstr.', '101'). House part may be None."""
+        m = re.match(r"^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)$", (street or "").strip())
+        if m:
+            return m.group(1).strip(), m.group(2).replace(" ", "")
+        return (street or "").strip(), None
 
     def _push_employee_to_datev(self, emp):
         """Submit employee master data to the DATEV hr:exchange API (async job)."""
