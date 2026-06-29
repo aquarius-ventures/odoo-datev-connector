@@ -103,6 +103,18 @@
                         </group>
                     </group>
 
+                    <group string="Beschäftigung &amp; Vergütung">
+                        <group>
+                            <field name="datev_employment_start" />
+                            <field name="datev_weekly_working_hours" />
+                            <field name="datev_employee_type" />
+                        </group>
+                        <group>
+                            <field name="datev_vacation_days" />
+                            <field name="datev_payment_method" />
+                        </group>
+                    </group>
+
                 </page>
             </xpath>
 

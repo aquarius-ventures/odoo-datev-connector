@@ -175,3 +175,47 @@ class TestHrExchangePayload(TransactionCase):
 
     def test_no_account_when_no_bank(self):
         self.assertNotIn("account", self._make_emp()._build_hr_exchange_payload())
+
+    # ── Employment / compensation variables ──────────────────────────────────
+    def test_employment_period_with_termination(self):
+        emp = self._make_emp(
+            datev_employment_start=date(2020, 3, 1),
+            departure_date=date(2024, 12, 31),
+        )
+        periods = emp._build_hr_exchange_payload()["employment_periods"]
+        self.assertEqual(periods[0]["date_of_commencement_of_employment"], "2020-03-01")
+        self.assertEqual(periods[0]["date_of_termination_of_employment"], "2024-12-31")
+
+    def test_no_employment_period_without_start(self):
+        self.assertNotIn("employment_periods", self._make_emp()._build_hr_exchange_payload())
+
+    def test_activity_fields(self):
+        job = self.env["hr.job"].create({"name": "DevOps Engineer"})
+        emp = self._make_emp(
+            datev_weekly_working_hours=38.5,
+            datev_employee_type="106",
+            datev_cost_center="KST-1",
+            job_id=job.id,
+        )
+        activity = emp._build_hr_exchange_payload()["activity"]
+        self.assertEqual(activity["weekly_working_hours"], 38.5)
+        self.assertEqual(activity["employee_type"], "106")
+        self.assertEqual(activity["individual_cost_center_id"], "KST-1")
+        # Spaces become underscores (DATEV pattern allows only [A-Za-z0-9_]).
+        self.assertEqual(activity["occupational_title"], "DevOps_Engineer")
+
+    def test_occupational_title_sanitize(self):
+        Emp = self.env["hr.employee"]
+        self.assertEqual(Emp._sanitize_occupational_title("Bürokaufmann"), "Buerokaufmann")
+        self.assertEqual(Emp._sanitize_occupational_title("Koch & Kellner"), "Koch__Kellner")
+        self.assertEqual(Emp._sanitize_occupational_title(""), "")
+
+    def test_payment_method_and_vacation(self):
+        emp = self._make_emp(datev_payment_method="5", datev_vacation_days=30.0)
+        payload = emp._build_hr_exchange_payload()
+        self.assertEqual(payload["payment_method"], "5")
+        self.assertEqual(payload["vacation_entitlement"]["basic_vacation_entitlement"], 30.0)
+
+    def test_default_payment_method_present(self):
+        # Default datev_payment_method = "1" → always present in payload.
+        self.assertEqual(self._make_emp()._build_hr_exchange_payload()["payment_method"], "1")

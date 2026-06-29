@@ -61,6 +61,13 @@ _DATEV_SYNC_FIELDS = frozenset(_DATEV_REQUIRED_FIELDS) | {
     "private_zip",
     "private_country_id",
     "bank_account_id",
+    "datev_employment_start",
+    "departure_date",
+    "datev_weekly_working_hours",
+    "datev_employee_type",
+    "datev_vacation_days",
+    "datev_payment_method",
+    "job_id",
 }
 
 # DATEV hr:exchange job lifecycle. The API documents `state` only as a free string
@@ -245,6 +252,75 @@ class HrEmployee(models.Model):
              "is_additional_contribution_..._childless_ignored = false).",
     )
 
+    # ── Beschäftigung & Vergütung ────────────────────────────────────────────
+    datev_employment_start = fields.Date(
+        string="Eintrittsdatum (DATEV)",
+        groups="hr.group_hr_user",
+        help="Beschäftigungsbeginn. Wird als employment_periods."
+             "date_of_commencement_of_employment übertragen. Das Austrittsdatum "
+             "wird – falls gesetzt – aus dem Standard-Feld 'Austrittsdatum' übernommen.",
+    )
+    datev_weekly_working_hours = fields.Float(
+        string="Wochenarbeitszeit",
+        digits=(4, 2),
+        groups="hr.group_hr_user",
+        help="Regelmäßige wöchentliche Arbeitszeit in Stunden (0–99). "
+             "DATEV activity.weekly_working_hours.",
+    )
+    datev_employee_type = fields.Selection(
+        [
+            ("101", "101 – Sozialversicherungspflichtig Beschäftigte"),
+            ("102", "102 – Auszubildende"),
+            ("103", "103 – Beschäftigte in Altersteilzeit"),
+            ("104", "104"),
+            ("105", "105 – Praktikanten"),
+            ("106", "106 – Werkstudenten"),
+            ("107", "107"),
+            ("108", "108"),
+            ("109", "109 – Geringfügig entlohnt (Minijob)"),
+            ("110", "110 – Kurzfristig Beschäftigte"),
+            ("111", "111"),
+            ("112", "112"),
+            ("113", "113"),
+            ("114", "114"),
+            ("116", "116"),
+            ("117", "117"),
+            ("118", "118"),
+            ("119", "119"),
+            ("120", "120"),
+            ("121", "121"),
+            ("122", "122"),
+            ("123", "123"),
+            ("124", "124"),
+            ("127", "127 – Freiwilligendienst (BFD/FSJ/FÖJ)"),
+            ("190", "190 – Nur Unfallversicherung"),
+            ("900", "900"),
+        ],
+        string="Personengruppe (SV)",
+        default="101",
+        groups="hr.group_hr_user",
+        help="SV-Personengruppenschlüssel. DATEV activity.employee_type. "
+             "101 = sozialversicherungspflichtig Beschäftigte (Standardfall).",
+    )
+    datev_vacation_days = fields.Float(
+        string="Urlaubsanspruch (Tage/Jahr)",
+        digits=(3, 1),
+        groups="hr.group_hr_user",
+        help="Jahresurlaubsanspruch in Tagen (0–99,5). "
+             "DATEV vacation_entitlement.basic_vacation_entitlement.",
+    )
+    datev_payment_method = fields.Selection(
+        [
+            ("1", "1 – Überweisung"),
+            ("4", "4 – Scheck"),
+            ("5", "5 – Barauszahlung"),
+        ],
+        string="Zahlungsweise",
+        default="1",
+        groups="hr.group_hr_user",
+        help="DATEV payment_method. Im Zweifel mit dem Steuerberater abstimmen.",
+    )
+
     # ── Sync logic ──────────────────────────────────────────────────────────
 
     def write(self, vals):
@@ -388,8 +464,40 @@ class HrEmployee(models.Model):
             social_insurance["company_number_of_health_insurer"] = self.datev_health_insurance_name[:8]
         payload["social_insurance"] = social_insurance
 
+        # ── Activity (cost center, working hours, employee type, job title) ──────
+        activity = {}
         if self.datev_cost_center:
-            payload["activity"] = {"individual_cost_center_id": self.datev_cost_center[:13]}
+            activity["individual_cost_center_id"] = self.datev_cost_center[:13]
+        if self.datev_weekly_working_hours:
+            activity["weekly_working_hours"] = self.datev_weekly_working_hours
+        if self.datev_employee_type:
+            activity["employee_type"] = self.datev_employee_type
+        occupational_title = self._sanitize_occupational_title(
+            self.job_id.name if self.job_id else ""
+        )
+        if occupational_title:
+            activity["occupational_title"] = occupational_title
+        if activity:
+            payload["activity"] = activity
+
+        # ── Employment period (commencement / termination) ──────────────────────
+        if self.datev_employment_start:
+            period = {
+                "date_of_commencement_of_employment":
+                    self.datev_employment_start.strftime("%Y-%m-%d"),
+            }
+            if self.departure_date:
+                period["date_of_termination_of_employment"] = \
+                    self.departure_date.strftime("%Y-%m-%d")
+            payload["employment_periods"] = [period]
+
+        # ── Payment method & vacation entitlement ───────────────────────────────
+        if self.datev_payment_method:
+            payload["payment_method"] = self.datev_payment_method
+        if self.datev_vacation_days:
+            payload["vacation_entitlement"] = {
+                "basic_vacation_entitlement": self.datev_vacation_days,
+            }
 
         # ── Address (optional; only sent when country + postal_code are present) ──
         addr = {}
@@ -433,6 +541,19 @@ class HrEmployee(models.Model):
         if m:
             return m.group(1).strip(), m.group(2).replace(" ", "")
         return (street or "").strip(), None
+
+    @staticmethod
+    def _sanitize_occupational_title(title):
+        """DATEV occupational_title allows only [A-Za-z0-9_] (max 30). Transliterate & strip."""
+        if not title:
+            return ""
+        for k, v in {
+            "ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss",
+        }.items():
+            title = title.replace(k, v)
+        title = re.sub(r"\s+", "_", title.strip())
+        title = re.sub(r"[^A-Za-z0-9_]", "", title)
+        return title[:30]
 
     def _push_employee_to_datev(self, emp):
         """Submit employee master data to the DATEV hr:exchange API (async job)."""
