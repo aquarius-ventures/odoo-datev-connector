@@ -49,7 +49,19 @@ _DATEV_SYNC_FIELDS = frozenset(_DATEV_REQUIRED_FIELDS) | {
     "datev_church_tax",
     "datev_cost_center",
     "datev_child_allowance",
+    "datev_employment_type",
+    "datev_flat_rate_tax",
+    "datev_si_nursing",
+    "datev_si_pension",
+    "datev_si_unemployment",
+    "datev_si_childless_surcharge",
 }
+
+# DATEV hr:exchange job lifecycle. The API documents `state` only as a free string
+# (observed initial value: "accepted"). We match terminal tokens explicitly and treat
+# any unknown/in-progress state as still pending, so a job is never prematurely closed.
+_JOB_SUCCESS_STATES = {"succeeded", "success", "successful", "completed", "done", "finished"}
+_JOB_FAILURE_STATES = {"failed", "failure", "rejected", "error", "errored", "cancelled", "canceled"}
 
 
 class HrEmployee(models.Model):
@@ -134,6 +146,28 @@ class HrEmployee(models.Model):
         string="Konfession / Kirchensteuer",
         groups="hr.group_hr_user",
     )
+    datev_employment_type = fields.Selection(
+        [
+            ("1", "1 – Erstes/Hauptdienstverhältnis"),
+            ("2", "2 – Weiteres Dienstverhältnis"),
+        ],
+        string="Beschäftigungsart (Steuer)",
+        default="1",
+        groups="hr.group_hr_user",
+        help="DATEV taxation.employment_type. 1 = erstes Dienstverhältnis (Hauptarbeitgeber), "
+             "2 = weiteres Dienstverhältnis (i. d. R. Steuerklasse VI).",
+    )
+    datev_flat_rate_tax = fields.Selection(
+        [
+            ("0", "0 – Keine Pauschalierung"),
+            ("1", "1 – Pauschalierung"),
+            ("2", "2 – Pauschalierung (besondere)"),
+        ],
+        string="Pauschalsteuer",
+        default="0",
+        groups="hr.group_hr_user",
+        help="DATEV taxation.flat_rate_tax. Im Zweifel mit dem Steuerberater abstimmen.",
+    )
 
     # ── Sozialversicherung ──────────────────────────────────────────────────
     datev_health_insurance_name = fields.Char(
@@ -152,6 +186,48 @@ class HrEmployee(models.Model):
         digits=(4, 1),
         groups="hr.group_hr_user",
         help="z. B. 0.5 je Kind bei gemeinsamer Veranlagung.",
+    )
+    datev_si_nursing = fields.Selection(
+        [
+            ("0", "0 – Kein Beitrag"),
+            ("1", "1 – Voller Beitrag"),
+            ("2", "2 – Halber Beitrag"),
+        ],
+        string="Beitragsklasse Pflegevers.",
+        default="1",
+        groups="hr.group_hr_user",
+        help="DATEV contribution_class_nursing_insurance.",
+    )
+    datev_si_pension = fields.Selection(
+        [
+            ("0", "0 – Kein Beitrag"),
+            ("1", "1 – Voller Beitrag"),
+            ("3", "3 – Halber Beitrag"),
+            ("5", "5 – Pauschalbeitrag"),
+        ],
+        string="Beitragsklasse Rentenvers.",
+        default="1",
+        groups="hr.group_hr_user",
+        help="DATEV contribution_class_pension_insurance.",
+    )
+    datev_si_unemployment = fields.Selection(
+        [
+            ("0", "0 – Kein Beitrag"),
+            ("1", "1 – Voller Beitrag"),
+            ("2", "2 – Halber Beitrag"),
+        ],
+        string="Beitragsklasse Arbeitslosenvers.",
+        default="1",
+        groups="hr.group_hr_user",
+        help="DATEV contribution_class_unemployment_insurance.",
+    )
+    datev_si_childless_surcharge = fields.Boolean(
+        string="Kinderlosen-Zuschlag (PV)",
+        default=True,
+        groups="hr.group_hr_user",
+        help="Zusätzlicher Beitrag zur Pflegeversicherung für Kinderlose (ab 23 J.). "
+             "Aktiviert = Zuschlag wird berücksichtigt (DATEV-Feld "
+             "is_additional_contribution_..._childless_ignored = false).",
     )
 
     # ── Sync logic ──────────────────────────────────────────────────────────
@@ -276,17 +352,22 @@ class HrEmployee(models.Model):
         if tax_card:
             payload["tax_card"] = tax_card
 
-        taxation = {"employment_type": 1, "flat_rate_tax": 0}
+        taxation = {
+            "employment_type": int(self.datev_employment_type or "1"),
+            "flat_rate_tax": int(self.datev_flat_rate_tax or "0"),
+        }
         if self.datev_tax_id_number:
             taxation["tax_identification_number"] = self.datev_tax_id_number
         payload["taxation"] = taxation
 
         social_insurance = {
             "contribution_class_health_insurance": health_contrib,
-            "contribution_class_nursing_insurance": 1,
-            "contribution_class_pension_insurance": 1,
-            "contribution_class_unemployment_insurance": 1,
-            "is_additional_contribution_to_nursing_insurance_for_childless_ignored": False,
+            "contribution_class_nursing_insurance": int(self.datev_si_nursing or "1"),
+            "contribution_class_pension_insurance": int(self.datev_si_pension or "1"),
+            "contribution_class_unemployment_insurance": int(self.datev_si_unemployment or "1"),
+            # Odoo field is "Zuschlag berücksichtigen"; DATEV field is "...ignored" → invert.
+            "is_additional_contribution_to_nursing_insurance_for_childless_ignored":
+                not self.datev_si_childless_surcharge,
         }
         if self.datev_health_insurance_name:
             social_insurance["company_number_of_health_insurer"] = self.datev_health_insurance_name[:8]
@@ -356,6 +437,27 @@ class HrEmployee(models.Model):
         if pending:
             pending._poll_datev_hr_jobs()
 
+    @staticmethod
+    def _extract_job_errors(result):
+        """Flatten a DATEV job-result error list into a single string (or False)."""
+        errors = result.get("errors") or result.get("messages") or []
+        if isinstance(errors, dict):
+            errors = [errors]
+        if not isinstance(errors, list):
+            return str(errors) or False
+        parts = []
+        for e in errors:
+            if isinstance(e, dict):
+                msg = (
+                    e.get("client_message") or e.get("message") or e.get("technical_message")
+                    or e.get("detail") or e.get("description") or ""
+                )
+                code = e.get("code") or e.get("id") or e.get("error_code") or ""
+                parts.append(f"[{code}] {msg}".strip() if code else (msg or str(e)))
+            else:
+                parts.append(str(e))
+        return "\n".join(p for p in parts if p) or False
+
     def _poll_datev_hr_jobs(self):
         ICP = self.env["ir.config_parameter"].sudo()
         consultant = ICP.get_param("datev_connector.consultant_number", "")
@@ -365,25 +467,35 @@ class HrEmployee(models.Model):
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
         service = DatevApiService(self.env, config)
 
-        _FINAL_STATES = {"succeeded", "failed", "rejected", "error"}
         for emp in self:
             try:
                 result = service.hr_exchange_job_status(datev_client_id, emp.datev_job_id)
             except Exception as exc:
                 _logger.warning("DATEV hr:exchange job poll failed for %s: %s", emp.name, exc)
                 continue
-            state = (result.get("state") or "").lower()
-            if state not in _FINAL_STATES:
-                continue
-            outcome = "succeeded" if state == "succeeded" else "failed"
-            errors = result.get("errors") or result.get("messages") or []
-            if isinstance(errors, list):
-                error_str = "\n".join(
-                    e.get("message", str(e)) if isinstance(e, dict) else str(e) for e in errors
-                ) or False
+
+            # Log the full raw response so the real state/error shapes can be verified.
+            _logger.info(
+                "DATEV hr:exchange job %s raw status (emp=%s): %s",
+                emp.datev_job_id, emp.name, result,
+            )
+
+            state = (result.get("state") or result.get("status") or "").lower()
+            errors_str = self._extract_job_errors(result)
+
+            if state in _JOB_FAILURE_STATES or (state in _JOB_SUCCESS_STATES and errors_str):
+                outcome = "failed"
+            elif state in _JOB_SUCCESS_STATES:
+                outcome = "succeeded"
             else:
-                error_str = str(errors) or False
-            emp.write({"datev_job_state": outcome, "datev_job_error": error_str})
+                # Unknown or still-running state → keep pending; surfaced in log above.
+                _logger.info(
+                    "DATEV hr:exchange job %s still pending (state=%r) for %s",
+                    emp.datev_job_id, state, emp.name,
+                )
+                continue
+
+            emp.write({"datev_job_state": outcome, "datev_job_error": errors_str})
             _logger.info(
                 "DATEV hr:exchange job %s → %s: emp=%s", emp.datev_job_id, outcome, emp.name
             )

@@ -81,9 +81,11 @@
                         <group>
                             <field name="datev_tax_class" class="o_datev_required" />
                             <field name="datev_tax_id_number" class="o_datev_required" />
+                            <field name="datev_church_tax" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_church_tax" class="o_datev_optional" />
+                            <field name="datev_employment_type" />
+                            <field name="datev_flat_rate_tax" />
                         </group>
                     </group>
 
@@ -91,9 +93,13 @@
                         <group>
                             <field name="datev_health_insurance_name" class="o_datev_required" />
                             <field name="datev_health_insurance_type" class="o_datev_required" />
+                            <field name="datev_child_allowance" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_child_allowance" class="o_datev_optional" />
+                            <field name="datev_si_nursing" />
+                            <field name="datev_si_pension" />
+                            <field name="datev_si_unemployment" />
+                            <field name="datev_si_childless_surcharge" widget="boolean_toggle" />
                         </group>
                     </group>
 

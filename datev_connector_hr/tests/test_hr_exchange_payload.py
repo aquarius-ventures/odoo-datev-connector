@@ -1,0 +1,126 @@
+from datetime import date
+
+from odoo.exceptions import UserError
+from odoo.tests.common import TransactionCase
+
+
+class TestHrExchangePayload(TransactionCase):
+    """Unit tests for hr.employee._build_hr_exchange_payload()."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.de = cls.env.ref("base.de")
+        cls.be = cls.env.ref("base.be")
+
+    def _make_emp(self, **vals):
+        base = {
+            "name": "Maria Schmidt",
+            "gender": "female",
+            "birthday": date(1990, 5, 1),
+            "ssnid": "12345678A12",
+            "datev_personnel_number": "42",
+            "datev_tax_class": "1",
+            "datev_tax_id_number": "12345678901",
+            "datev_health_insurance_name": "87880235",
+            "datev_health_insurance_type": "gkv",
+        }
+        base.update(vals)
+        return self.env["hr.employee"].sudo().create(base)
+
+    # ── Name & basic identity ────────────────────────────────────────────────
+    def test_name_split_and_personnel_number(self):
+        payload = self._make_emp()._build_hr_exchange_payload()
+        self.assertEqual(payload["surname"], "Schmidt")
+        self.assertEqual(payload["first_name"], "Maria")
+        # Personnel number is converted to an integer.
+        self.assertEqual(payload["personnel_number"], 42)
+        self.assertIsInstance(payload["personnel_number"], int)
+
+    def test_single_word_name_has_no_first_name(self):
+        payload = self._make_emp(name="Cher")._build_hr_exchange_payload()
+        self.assertEqual(payload["surname"], "Cher")
+        self.assertNotIn("first_name", payload)
+
+    def test_gender_mapping(self):
+        self.assertEqual(
+            self._make_emp(gender="male")._build_hr_exchange_payload()["personal_data"]["sex"], "M"
+        )
+        self.assertEqual(
+            self._make_emp(gender="female")._build_hr_exchange_payload()["personal_data"]["sex"], "W"
+        )
+        self.assertEqual(
+            self._make_emp(gender="other")._build_hr_exchange_payload()["personal_data"]["sex"], "D"
+        )
+
+    # ── Personnel number validation ──────────────────────────────────────────
+    def test_invalid_personnel_number_raises(self):
+        for bad in ("0", "abc", "100000", ""):
+            with self.assertRaises(UserError):
+                self._make_emp(datev_personnel_number=bad)._build_hr_exchange_payload()
+
+    # ── Church tax denomination filter ───────────────────────────────────────
+    def test_denomination_valid_passes_through(self):
+        payload = self._make_emp(datev_church_tax="ev")._build_hr_exchange_payload()
+        self.assertEqual(payload["tax_card"]["denomination"], "ev")
+
+    def test_denomination_ohne_is_filtered(self):
+        payload = self._make_emp(datev_church_tax="ohne")._build_hr_exchange_payload()
+        self.assertNotIn("denomination", payload.get("tax_card", {}))
+
+    # ── Health insurance contribution class ──────────────────────────────────
+    def test_health_insurance_gkv_pkv(self):
+        gkv = self._make_emp(datev_health_insurance_type="gkv")._build_hr_exchange_payload()
+        pkv = self._make_emp(datev_health_insurance_type="pkv")._build_hr_exchange_payload()
+        self.assertEqual(gkv["social_insurance"]["contribution_class_health_insurance"], 1)
+        self.assertEqual(pkv["social_insurance"]["contribution_class_health_insurance"], 9)
+
+    # ── Default SI / taxation values (preserve historical behaviour) ─────────
+    def test_default_si_and_taxation(self):
+        si = self._make_emp()._build_hr_exchange_payload()["social_insurance"]
+        self.assertEqual(si["contribution_class_nursing_insurance"], 1)
+        self.assertEqual(si["contribution_class_pension_insurance"], 1)
+        self.assertEqual(si["contribution_class_unemployment_insurance"], 1)
+        tax = self._make_emp()._build_hr_exchange_payload()["taxation"]
+        self.assertEqual(tax["employment_type"], 1)
+        self.assertEqual(tax["flat_rate_tax"], 0)
+
+    def test_si_overrides_are_int(self):
+        emp = self._make_emp(
+            datev_si_nursing="2", datev_si_pension="3", datev_si_unemployment="2",
+            datev_employment_type="2", datev_flat_rate_tax="2",
+        )
+        payload = emp._build_hr_exchange_payload()
+        si = payload["social_insurance"]
+        self.assertEqual(si["contribution_class_nursing_insurance"], 2)
+        self.assertEqual(si["contribution_class_pension_insurance"], 3)
+        self.assertEqual(si["contribution_class_unemployment_insurance"], 2)
+        self.assertEqual(payload["taxation"]["employment_type"], 2)
+        self.assertEqual(payload["taxation"]["flat_rate_tax"], 2)
+
+    def test_childless_surcharge_inversion(self):
+        # Odoo "Zuschlag berücksichtigen" True → DATEV "...ignored" False, and vice versa.
+        on = self._make_emp(datev_si_childless_surcharge=True)._build_hr_exchange_payload()
+        off = self._make_emp(datev_si_childless_surcharge=False)._build_hr_exchange_payload()
+        self.assertFalse(
+            on["social_insurance"]["is_additional_contribution_to_nursing_insurance_for_childless_ignored"]
+        )
+        self.assertTrue(
+            off["social_insurance"]["is_additional_contribution_to_nursing_insurance_for_childless_ignored"]
+        )
+
+    # ── country_of_birth mapping ─────────────────────────────────────────────
+    def test_country_of_birth_mapped(self):
+        de = self._make_emp(country_of_birth=self.de.id)._build_hr_exchange_payload()
+        be = self._make_emp(country_of_birth=self.be.id)._build_hr_exchange_payload()
+        self.assertEqual(de["personal_data"]["country_of_birth"], "000")
+        self.assertEqual(be["personal_data"]["country_of_birth"], "124")
+
+    def test_country_of_birth_absent_when_unset(self):
+        payload = self._make_emp()._build_hr_exchange_payload()
+        self.assertNotIn("country_of_birth", payload["personal_data"])
+
+    def test_country_of_birth_unmapped_raises(self):
+        bogus = self.env["res.country"].sudo().create({"name": "Testland", "code": "QZ"})
+        with self.assertRaises(UserError):
+            self._make_emp(country_of_birth=bogus.id)._build_hr_exchange_payload()
