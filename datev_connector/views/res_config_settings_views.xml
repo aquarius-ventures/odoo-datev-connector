@@ -30,13 +30,15 @@
                         <setting string="Client Secret" name="datev_client_secret_setting">
                             <field name="datev_client_secret" password="True" />
                         </setting>
-                        <setting string="Consultant Number" name="datev_consultant_number_setting"
-                                 help="DATEV Beraternummer (7 digits)">
-                            <field name="datev_consultant_number" />
+                        <setting string="Consultant Number (client-id)" name="datev_consultant_number_setting"
+                                 help="Erster Teil der DATEV client-id (Beraternummer des Mandanten, bis zu 7 Stellen).
+                                       Das ist NICHT zwingend Ihre Login-Beraternummer, sondern der Wert, den DATEV für
+                                       den Zielmandanten vorgibt (Sandbox z. B. 455148). Über 'Fetch from DATEV' abrufbar.">
+                            <field name="datev_consultant_number" placeholder="z. B. 455148" />
                         </setting>
-                        <setting string="Client Number" name="datev_client_number_setting"
-                                 help="DATEV Mandantennummer">
-                            <field name="datev_client_number" />
+                        <setting string="Client Number (client-id)" name="datev_client_number_setting"
+                                 help="Zweiter Teil der client-id (Mandantennummer, bis zu 5 Stellen). Sandbox z. B. 1.">
+                            <field name="datev_client_number" placeholder="z. B. 1" />
                             <button name="action_datev_fetch_clients"
                                     type="object"
                                     string="Fetch from DATEV"
