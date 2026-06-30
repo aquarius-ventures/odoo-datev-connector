@@ -6,6 +6,11 @@
         <field name="inherit_id" ref="hr.view_employee_form" />
         <field name="arch" type="xml">
 
+            <!-- DATEV-Badge-Konvention:
+                 o_datev_required (grün) = blockiert den Sync, wenn leer
+                   → MUSS deckungsgleich mit _DATEV_REQUIRED_FIELDS sein.
+                 o_datev_optional (grau) = wird übertragen, blockiert aber nicht. -->
+
             <!-- ── Pflichtfelder im Personal-Tab (grün) ───────────────────── -->
             <xpath expr="//page[@name='personal_information']//field[@name='birthday']" position="attributes">
                 <attribute name="class">o_datev_required</attribute>
@@ -42,6 +47,9 @@
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
             <xpath expr="//page[@name='personal_information']//field[@name='private_country_id']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='bank_account_id']" position="attributes">
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
 
@@ -110,11 +118,11 @@
                             <field name="datev_child_allowance" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_si_nursing" class="o_datev_required" />
-                            <field name="datev_si_pension" class="o_datev_required" />
-                            <field name="datev_si_unemployment" class="o_datev_required" />
+                            <field name="datev_si_nursing" class="o_datev_optional" />
+                            <field name="datev_si_pension" class="o_datev_optional" />
+                            <field name="datev_si_unemployment" class="o_datev_optional" />
                             <field name="datev_si_childless_surcharge" widget="boolean_toggle"
-                                   class="o_datev_required" />
+                                   class="o_datev_optional" />
                         </group>
                     </group>
 
