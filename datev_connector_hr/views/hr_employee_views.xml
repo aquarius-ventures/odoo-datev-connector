@@ -31,6 +31,20 @@
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
 
+            <!-- ── Adressfelder (grau) – werden als address-Objekt übertragen ── -->
+            <xpath expr="//page[@name='personal_information']//field[@name='private_street']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='private_city']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='private_zip']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+            <xpath expr="//page[@name='personal_information']//field[@name='private_country_id']" position="attributes">
+                <attribute name="class">o_datev_optional</attribute>
+            </xpath>
+
             <!-- ── Neuer DATEV / LODAS Tab ────────────────────────────────── -->
             <xpath expr="//notebook" position="inside">
                 <page string="DATEV / LODAS" name="datev_lodas"
@@ -84,8 +98,8 @@
                             <field name="datev_church_tax" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_employment_type" />
-                            <field name="datev_flat_rate_tax" />
+                            <field name="datev_employment_type" class="o_datev_optional" />
+                            <field name="datev_flat_rate_tax" class="o_datev_optional" />
                         </group>
                     </group>
 
@@ -96,22 +110,23 @@
                             <field name="datev_child_allowance" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_si_nursing" />
-                            <field name="datev_si_pension" />
-                            <field name="datev_si_unemployment" />
-                            <field name="datev_si_childless_surcharge" widget="boolean_toggle" />
+                            <field name="datev_si_nursing" class="o_datev_required" />
+                            <field name="datev_si_pension" class="o_datev_required" />
+                            <field name="datev_si_unemployment" class="o_datev_required" />
+                            <field name="datev_si_childless_surcharge" widget="boolean_toggle"
+                                   class="o_datev_required" />
                         </group>
                     </group>
 
                     <group string="Beschäftigung &amp; Vergütung">
                         <group>
-                            <field name="datev_employment_start" />
-                            <field name="datev_weekly_working_hours" />
-                            <field name="datev_employee_type" />
+                            <field name="datev_employment_start" class="o_datev_optional" />
+                            <field name="datev_weekly_working_hours" class="o_datev_optional" />
+                            <field name="datev_employee_type" class="o_datev_optional" />
                         </group>
                         <group>
-                            <field name="datev_vacation_days" />
-                            <field name="datev_payment_method" />
+                            <field name="datev_vacation_days" class="o_datev_optional" />
+                            <field name="datev_payment_method" class="o_datev_optional" />
                         </group>
                     </group>
 
