@@ -1,6 +1,6 @@
 {
     "name": "DATEV Cloud Connector",
-    "version": "17.0.1.0.5",
+    "version": "17.0.1.0.6",
     "category": "Accounting/Accounting",
     "summary": "Connect Odoo with DATEV Cloud (OAuth2, base API client)",
     "author": "Aquarius Ventures",
