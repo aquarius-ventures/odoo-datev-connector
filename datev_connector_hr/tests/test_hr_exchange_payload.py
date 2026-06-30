@@ -138,13 +138,23 @@ class TestHrExchangePayload(TransactionCase):
         self.assertEqual(addr["house_number"], "101")
         self.assertEqual(addr["postal_code"], "90329")
         self.assertEqual(addr["city"], "Nürnberg")
-        self.assertEqual(addr["country"], "D")
+        # ISO alpha-2 identity passthrough (not the DEÜV "D").
+        self.assertEqual(addr["country"], "DE")
 
-    def test_address_skipped_when_country_unmapped(self):
+    def test_address_us_is_accepted(self):
         emp = self._make_emp(
             private_street="Main St 1",
             private_zip="12345",
-            private_country_id=self.env.ref("base.us").id,  # not in _ADDRESS_COUNTRY_MAP
+            private_country_id=self.env.ref("base.us").id,
+        )
+        self.assertEqual(emp._build_hr_exchange_payload()["address"]["country"], "US")
+
+    def test_address_skipped_when_country_not_accepted(self):
+        bogus = self.env["res.country"].sudo().create({"name": "Testland", "code": "QZ"})
+        emp = self._make_emp(
+            private_street="Main St 1",
+            private_zip="12345",
+            private_country_id=bogus.id,
         )
         self.assertNotIn("address", emp._build_hr_exchange_payload())
 

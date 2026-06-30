@@ -29,6 +29,31 @@ def _country_of_birth_code(iso_alpha2):
             _COUNTRY_OF_BIRTH_MAPPING = {}
     return _COUNTRY_OF_BIRTH_MAPPING.get((iso_alpha2 or "").upper())
 
+
+# Accepted address country codes. The hr:exchange address.country field takes
+# ISO 3166-1 alpha-2 (identity passthrough of Odoo res.country.code) — NOT the
+# alphabetic DEÜV-LDKZ that the OpenAPI enum suggests. We validate against the
+# accepted set and pass the code through unchanged.
+_ADDRESS_COUNTRY_ACCEPT = None
+
+
+def _address_country_code(iso_alpha2):
+    """Return the (upper-cased) ISO alpha-2 code if DATEV accepts it for addresses, else None."""
+    global _ADDRESS_COUNTRY_ACCEPT
+    if _ADDRESS_COUNTRY_ACCEPT is None:
+        path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "data", "datev_address_country_accept_list.json",
+        )
+        try:
+            with open(path, encoding="utf-8") as fh:
+                _ADDRESS_COUNTRY_ACCEPT = set(json.load(fh).get("accepted_iso_alpha2", []))
+        except Exception as exc:  # pragma: no cover - defensive
+            _logger.error("DATEV: could not load address country accept list: %s", exc)
+            _ADDRESS_COUNTRY_ACCEPT = set()
+    code = (iso_alpha2 or "").upper()
+    return code if code in _ADDRESS_COUNTRY_ACCEPT else None
+
 _DATEV_REQUIRED_FIELDS = {
     "birthday": "Geburtsdatum",
     "gender": "Geschlecht",
@@ -75,15 +100,6 @@ _DATEV_SYNC_FIELDS = frozenset(_DATEV_REQUIRED_FIELDS) | {
 # any unknown/in-progress state as still pending, so a job is never prematurely closed.
 _JOB_SUCCESS_STATES = {"succeeded", "success", "successful", "completed", "done", "finished"}
 _JOB_FAILURE_STATES = {"failed", "failure", "rejected", "error", "errored", "cancelled", "canceled"}
-
-# DATEV address country codes (LODAS "Länderkennzeichen") keyed by ISO 3166-1 alpha-2.
-# This is a DIFFERENT code system than the country_of_birth Staatsangehörigkeitsschlüssel.
-# Only verified entries are listed; extend with the authoritative DATEV list as needed.
-# Addresses whose country is not mapped are skipped (logged), not sent with a wrong code.
-_ADDRESS_COUNTRY_MAP = {
-    "DE": "D",
-    "AT": "A",
-}
 
 
 class HrEmployee(models.Model):
@@ -511,12 +527,12 @@ class HrEmployee(models.Model):
         if self.private_zip:
             addr["postal_code"] = self.private_zip[:10]
         if self.private_country_id:
-            country_code = _ADDRESS_COUNTRY_MAP.get((self.private_country_id.code or "").upper())
+            country_code = _address_country_code(self.private_country_id.code)
             if country_code:
                 addr["country"] = country_code
             else:
                 _logger.warning(
-                    "DATEV: address skipped for %s — no DATEV country code mapped for %s (%s).",
+                    "DATEV: address skipped for %s — country %s (%s) not in DATEV accept list.",
                     self.name, self.private_country_id.name, self.private_country_id.code,
                 )
         # DATEV Address schema requires both country and postal_code.
