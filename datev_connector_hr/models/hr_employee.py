@@ -488,7 +488,7 @@ class HrEmployee(models.Model):
             activity["weekly_working_hours"] = self.datev_weekly_working_hours
         if self.datev_employee_type:
             activity["employee_type"] = self.datev_employee_type
-        occupational_title = self._sanitize_occupational_title(
+        occupational_title = self._format_occupational_title(
             self.job_id.name if self.job_id else ""
         )
         if occupational_title:
@@ -559,17 +559,13 @@ class HrEmployee(models.Model):
         return (street or "").strip(), None
 
     @staticmethod
-    def _sanitize_occupational_title(title):
-        """DATEV occupational_title allows only [A-Za-z0-9_] (max 30). Transliterate & strip."""
-        if not title:
-            return ""
-        for k, v in {
-            "ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss",
-        }.items():
-            title = title.replace(k, v)
-        title = re.sub(r"\s+", "_", title.strip())
-        title = re.sub(r"[^A-Za-z0-9_]", "", title)
-        return title[:30]
+    def _format_occupational_title(title):
+        """Format occupational_title for DATEV: sent as-is, only capped at 30 chars.
+
+        The OpenAPI spec declares a restrictive pattern (^[a-zA-Z0-9_]*$) but its own
+        examples use spaces and umlauts, so we follow the examples and send raw text.
+        """
+        return (title or "").strip()[:30]
 
     def _push_employee_to_datev(self, emp):
         """Submit employee master data to the DATEV hr:exchange API (async job)."""

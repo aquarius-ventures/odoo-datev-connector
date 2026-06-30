@@ -211,14 +211,16 @@ class TestHrExchangePayload(TransactionCase):
         self.assertEqual(activity["weekly_working_hours"], 38.5)
         self.assertEqual(activity["employee_type"], "106")
         self.assertEqual(activity["individual_cost_center_id"], "KST-1")
-        # Spaces become underscores (DATEV pattern allows only [A-Za-z0-9_]).
-        self.assertEqual(activity["occupational_title"], "DevOps_Engineer")
+        # Sent as-is (raw), only length-capped.
+        self.assertEqual(activity["occupational_title"], "DevOps Engineer")
 
-    def test_occupational_title_sanitize(self):
+    def test_format_occupational_title(self):
         Emp = self.env["hr.employee"]
-        self.assertEqual(Emp._sanitize_occupational_title("Bürokaufmann"), "Buerokaufmann")
-        self.assertEqual(Emp._sanitize_occupational_title("Koch & Kellner"), "Koch__Kellner")
-        self.assertEqual(Emp._sanitize_occupational_title(""), "")
+        self.assertEqual(Emp._format_occupational_title("Bürokaufmann"), "Bürokaufmann")
+        self.assertEqual(Emp._format_occupational_title("Koch & Kellner"), "Koch & Kellner")
+        self.assertEqual(Emp._format_occupational_title("  Tischler  "), "Tischler")
+        self.assertEqual(Emp._format_occupational_title("X" * 40), "X" * 30)
+        self.assertEqual(Emp._format_occupational_title(""), "")
 
     def test_payment_method_and_vacation(self):
         emp = self._make_emp(datev_payment_method="5", datev_vacation_days=30.0)
