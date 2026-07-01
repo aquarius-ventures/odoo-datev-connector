@@ -17,6 +17,11 @@ class ResCompany(models.Model):
         string="DATEV Account Number Length",
         default="4",
     )
+    datev_last_error = fields.Char(
+        string="DATEV Last Connection Error",
+        readonly=True,
+        help="Last error from the DATEV OAuth flow. Cleared on a successful connect.",
+    )
 
     def datev_get_client_id(self):
         """Return the DATEV client-id ('consultant-client') for this company."""

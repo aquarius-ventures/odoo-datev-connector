@@ -28,6 +28,9 @@ class ResConfigSettings(models.TransientModel):
     datev_account_number_length = fields.Selection(
         related="company_id.datev_account_number_length", readonly=False,
     )
+    datev_last_error = fields.Char(
+        related="company_id.datev_last_error", readonly=True,
+    )
     datev_connection_state = fields.Selection(
         [("disconnected", "Disconnected"), ("connected", "Connected")],
         string="Connection Status",
@@ -57,6 +60,8 @@ class ResConfigSettings(models.TransientModel):
         config = self._get_datev_config(self.company_id)
         if not config["client_id"] or not config["client_secret"]:
             raise UserError(_("Please enter your DATEV Client ID and Client Secret first."))
+        # Clear any previous error at the start of a fresh connection attempt.
+        self.company_id.sudo().datev_last_error = False
 
         from ..services.datev_api import DatevApiService
 

@@ -10,6 +10,11 @@
                      logo="/datev_connector/static/description/icon.png">
 
                     <block title="Connection" name="datev_connection_block">
+                        <div class="alert alert-danger col-12" role="alert"
+                             invisible="not datev_last_error">
+                            <strong>Letzter Verbindungsfehler: </strong>
+                            <field name="datev_last_error" readonly="1" nolabel="1" />
+                        </div>
                         <setting string="Status" name="datev_status_setting">
                             <field name="datev_connection_state"
                                    widget="badge"

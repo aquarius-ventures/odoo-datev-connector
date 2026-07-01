@@ -129,11 +129,19 @@ class DatevApiService:
                 auth=(self._client_id, self._client_secret),
                 timeout=30,
             )
-            if not resp.ok:
-                _logger.error("DATEV token error %s: %s", resp.status_code, resp.text)
-            resp.raise_for_status()
         except requests.RequestException as exc:
             raise UserError(f"DATEV token request failed: {exc}") from exc
+        if not resp.ok:
+            _logger.error("DATEV token error %s: %s", resp.status_code, resp.text)
+            detail = resp.text
+            try:
+                body = resp.json()
+                detail = body.get("error_description") or body.get("error") or detail
+            except Exception:
+                pass
+            raise UserError(
+                f"DATEV token request failed ({resp.status_code}): {detail}"
+            )
         data = resp.json()
         granted_scope = data.get("scope", "<not returned by DATEV>")
         _logger.info("DATEV token granted — scope: %s", granted_scope)
