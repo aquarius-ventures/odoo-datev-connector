@@ -7,7 +7,7 @@
 
     <!-- ── Two demo companies, mapped to DATEV sandbox clients 455148-1/2 ─────── -->
     <record id="company_datev_sandbox_1" model="res.company">
-        <field name="name">DATEV Sandbox 455148-1</field>
+        <field name="name">Alright Tonight incorporated</field>
         <field name="currency_id" ref="base.EUR" />
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
@@ -17,7 +17,7 @@
     </record>
 
     <record id="company_datev_sandbox_2" model="res.company">
-        <field name="name">DATEV Sandbox 455148-2</field>
+        <field name="name">C.o.d, Caring for you</field>
         <field name="currency_id" ref="base.EUR" />
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
