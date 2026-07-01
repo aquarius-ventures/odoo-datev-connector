@@ -92,6 +92,10 @@ class DatevApiService:
             "state": state,
             "code_challenge": challenge,
             "code_challenge_method": "S256",
+            # Force a fresh login prompt. Without this, a stale/expired DATEV
+            # session cookie makes the authorize endpoint show a "Sitzung beendet"
+            # logout page instead of the login form, requiring a manual retry.
+            "prompt": "login",
         }
         return _OAUTH_BASE[self._env_key]["auth"] + "?" + urllib.parse.urlencode(params)
 
