@@ -569,18 +569,11 @@ class HrEmployee(models.Model):
 
     def _push_employee_to_datev(self, emp):
         """Submit employee master data to the DATEV hr:exchange API (async job)."""
-        ICP = self.env["ir.config_parameter"].sudo()
-        consultant = ICP.get_param("datev_connector.consultant_number", "")
-        client_nr = ICP.get_param("datev_connector.client_number", "")
-        if not consultant or not client_nr:
-            raise UserError(
-                "DATEV: Bitte Berater- und Mandantennummer in den Einstellungen hinterlegen."
-            )
-
-        datev_client_id = f"{consultant}-{client_nr}"
+        company = emp.company_id or self.env.company
+        datev_client_id = company.datev_get_client_id()
         reference_date = fields.Date.today().strftime("%Y-%m")
 
-        config = self.env["res.config.settings"]._get_datev_config()
+        config = self.env["res.config.settings"]._get_datev_config(company)
 
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
 
@@ -648,16 +641,14 @@ class HrEmployee(models.Model):
         return "\n".join(p for p in parts if p) or False
 
     def _poll_datev_hr_jobs(self):
-        ICP = self.env["ir.config_parameter"].sudo()
-        consultant = ICP.get_param("datev_connector.consultant_number", "")
-        client_nr = ICP.get_param("datev_connector.client_number", "")
-        datev_client_id = f"{consultant}-{client_nr}"
-        config = self.env["res.config.settings"]._get_datev_config()
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
-        service = DatevApiService(self.env, config)
+        Settings = self.env["res.config.settings"]
 
         for emp in self:
+            company = emp.company_id or self.env.company
             try:
+                datev_client_id = company.datev_get_client_id()
+                service = DatevApiService(self.env, Settings._get_datev_config(company))
                 result = service.hr_exchange_job_status(datev_client_id, emp.datev_job_id)
             except Exception as exc:
                 _logger.warning("DATEV hr:exchange job poll failed for %s: %s", emp.name, exc)

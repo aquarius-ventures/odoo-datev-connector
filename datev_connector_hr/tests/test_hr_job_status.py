@@ -7,6 +7,14 @@ from odoo.tests.common import TransactionCase
 class TestHrJobStatus(TransactionCase):
     """Tests for hr:exchange job-status polling (_poll_datev_hr_jobs / _extract_job_errors)."""
 
+    def setUp(self):
+        super().setUp()
+        # datev_get_client_id() needs consultant + client number on the company.
+        self.env.company.write({
+            "datev_consultant_number": "455148",
+            "datev_client_number": "1",
+        })
+
     def _make_pending_emp(self):
         emp = self.env["hr.employee"].sudo().create({
             "name": "Maria Schmidt",
@@ -24,7 +32,10 @@ class TestHrJobStatus(TransactionCase):
         with patch(
             "odoo.addons.datev_connector.services.datev_api.DatevApiService",
             return_value=fake_service,
-        ), patch.object(settings_model, "_get_datev_config", lambda self: {}, create=True):
+        ), patch.object(
+            settings_model, "_get_datev_config",
+            lambda self, company=None: {}, create=True,
+        ):
             emp._poll_datev_hr_jobs()
 
     # ── State outcomes ───────────────────────────────────────────────────────

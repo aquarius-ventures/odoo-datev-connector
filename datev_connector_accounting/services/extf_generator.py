@@ -199,9 +199,8 @@ class ExtfGenerator:
         Using csv.writer for this row would over-quote or under-quote,
         so we build the line manually.
         """
-        ICP = self._env["ir.config_parameter"].sudo()
-        consultant_number = ICP.get_param("datev_connector.consultant_number", "")
-        client_number = ICP.get_param("datev_connector.client_number", "")
+        consultant_number = self._company.datev_consultant_number or ""
+        client_number = self._company.datev_client_number or ""
         fiscal_last_month = int(self._company.fiscalyear_last_month or 12)
         fiscal_last_day = int(self._company.fiscalyear_last_day or 31)
         fy_end_in_year = date(self._date_from.year, fiscal_last_month, fiscal_last_day)
@@ -227,9 +226,7 @@ class ExtfGenerator:
             consultant_number,                            # 11 Beraternummer
             client_number,                                # 12 Mandantennummer
             fy_start.strftime("%Y%m%d"),                 # 13 WJ-Beginn (numeric)
-            self._env["ir.config_parameter"].sudo().get_param(
-                "datev_connector.account_number_length", "4"
-            ),                                            # 14 Sachkontonummernlänge
+            self._company.datev_account_number_length or "4",  # 14 Sachkontonummernlänge
             self._date_from.strftime("%Y%m%d"),          # 15 Von (numeric)
             self._date_to.strftime("%Y%m%d"),            # 16 Bis (numeric)
             "",                                           # 17 Bezeichnung

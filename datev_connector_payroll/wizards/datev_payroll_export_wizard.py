@@ -72,13 +72,10 @@ class DatevPayrollExportWizard(models.TransientModel):
         # Upload via DATEV Payroll API (endpoint to be confirmed with developer portal)
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
 
-        config = self.env["res.config.settings"]._get_datev_config()
+        company = self.env.company
+        config = self.env["res.config.settings"]._get_datev_config(company)
         service = DatevApiService(self.env, config)
-        client_number = (
-            self.env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.client_number", "")
-        )
+        client_number = company.datev_client_number or ""
         if not client_number:
             raise UserError(
                 _("Please configure the DATEV Client Number in Settings → DATEV Cloud.")

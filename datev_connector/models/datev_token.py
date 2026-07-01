@@ -55,7 +55,7 @@ class DatevToken(models.Model):
         self.ensure_one()
         if not self.refresh_token:
             raise UserError(_("No refresh token available. Please reconnect to DATEV."))
-        config = self.env["res.config.settings"]._get_datev_config()
+        config = self.env["res.config.settings"]._get_datev_config(self.company_id)
         from ..services.datev_api import DatevApiService
 
         service = DatevApiService(self.env, config)

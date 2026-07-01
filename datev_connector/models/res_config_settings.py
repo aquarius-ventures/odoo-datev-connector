@@ -9,31 +9,24 @@ _logger = logging.getLogger(__name__)
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
+    # Per-company DATEV settings (stored on res.company).
     datev_client_id = fields.Char(
-        string="DATEV Client ID",
-        config_parameter="datev_connector.client_id",
+        related="company_id.datev_client_id", readonly=False,
     )
     datev_client_secret = fields.Char(
-        string="DATEV Client Secret",
-        config_parameter="datev_connector.client_secret",
+        related="company_id.datev_client_secret", readonly=False,
     )
     datev_sandbox_mode = fields.Boolean(
-        string="Sandbox Mode",
-        config_parameter="datev_connector.sandbox_mode",
+        related="company_id.datev_sandbox_mode", readonly=False,
     )
     datev_consultant_number = fields.Char(
-        string="Consultant Number",
-        config_parameter="datev_connector.consultant_number",
+        related="company_id.datev_consultant_number", readonly=False,
     )
     datev_client_number = fields.Char(
-        string="Client Number",
-        config_parameter="datev_connector.client_number",
+        related="company_id.datev_client_number", readonly=False,
     )
     datev_account_number_length = fields.Selection(
-        [("4", "4"), ("5", "5"), ("6", "6"), ("7", "7"), ("8", "8")],
-        string="Account Number Length",
-        config_parameter="datev_connector.account_number_length",
-        default="4",
+        related="company_id.datev_account_number_length", readonly=False,
     )
     datev_connection_state = fields.Selection(
         [("disconnected", "Disconnected"), ("connected", "Connected")],
@@ -41,27 +34,27 @@ class ResConfigSettings(models.TransientModel):
         compute="_compute_datev_connection_state",
     )
 
-    @api.depends("datev_client_id")
+    @api.depends("company_id", "datev_client_id")
     def _compute_datev_connection_state(self):
         for rec in self:
             token = self.env["datev.token"].search(
-                [("company_id", "=", self.env.company.id)], limit=1
+                [("company_id", "=", rec.company_id.id)], limit=1
             )
             rec.datev_connection_state = token.state if token else "disconnected"
 
     @api.model
-    def _get_datev_config(self):
-        ICP = self.env["ir.config_parameter"].sudo()
-        sandbox = ICP.get_param("datev_connector.sandbox_mode", "False") == "True"
+    def _get_datev_config(self, company=None):
+        company = company or self.env.company
         return {
-            "client_id": ICP.get_param("datev_connector.client_id", ""),
-            "client_secret": ICP.get_param("datev_connector.client_secret", ""),
-            "sandbox": sandbox,
+            "client_id": company.datev_client_id or "",
+            "client_secret": company.datev_client_secret or "",
+            "sandbox": bool(company.datev_sandbox_mode),
+            "company_id": company.id,
         }
 
     def action_datev_connect(self):
         self.ensure_one()
-        config = self._get_datev_config()
+        config = self._get_datev_config(self.company_id)
         if not config["client_id"] or not config["client_secret"]:
             raise UserError(_("Please enter your DATEV Client ID and Client Secret first."))
 
@@ -78,7 +71,7 @@ class ResConfigSettings(models.TransientModel):
     def action_datev_disconnect(self):
         self.ensure_one()
         token = self.env["datev.token"].search(
-            [("company_id", "=", self.env.company.id)], limit=1
+            [("company_id", "=", self.company_id.id)], limit=1
         )
         if token:
             token.action_disconnect()
@@ -86,7 +79,7 @@ class ResConfigSettings(models.TransientModel):
     def action_datev_fetch_clients(self):
         """Fetch available DATEV clients using the authenticated user token."""
         self.ensure_one()
-        config = self._get_datev_config()
+        config = self._get_datev_config(self.company_id)
 
         import requests
         from ..services.datev_api import DatevApiService

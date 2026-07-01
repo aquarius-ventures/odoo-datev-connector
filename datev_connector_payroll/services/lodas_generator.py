@@ -37,16 +37,8 @@ class LodasGenerator:
         return output.getvalue().encode("cp1252")  # LODAS uses Windows-1252
 
     def _write_header(self, output: io.StringIO):
-        consultant_number = (
-            self._env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.consultant_number", "")
-        )
-        client_number = (
-            self._env["ir.config_parameter"]
-            .sudo()
-            .get_param("datev_connector.client_number", "")
-        )
+        consultant_number = self._company.datev_consultant_number or ""
+        client_number = self._company.datev_client_number or ""
         output.write(f"[Allgemein]\n")
         output.write(f"Erstelldatum={date.today().strftime('%d.%m.%Y')}\n")
         output.write(f"Beraternummer={consultant_number}\n")

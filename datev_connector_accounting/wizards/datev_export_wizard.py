@@ -94,18 +94,11 @@ class DatevExportWizard(models.TransientModel):
     def _action_upload(self, csv_bytes: bytes, moves):
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
 
-        config = self.env["res.config.settings"]._get_datev_config()
+        company = self.env.company
+        config = self.env["res.config.settings"]._get_datev_config(company)
         service = DatevApiService(self.env, config)
 
-        ICP = self.env["ir.config_parameter"].sudo()
-        consultant_number = ICP.get_param("datev_connector.consultant_number", "")
-        client_number = ICP.get_param("datev_connector.client_number", "")
-        if not consultant_number or not client_number:
-            raise UserError(
-                _("Please configure Consultant Number and Client Number in Settings → DATEV Cloud.")
-            )
-
-        client_id = f"{consultant_number}-{client_number}"
+        client_id = company.datev_get_client_id()
         filename = f"EXTF_Buchungsstapel_{self.date_from.strftime('%Y%m%d')}_{self.date_to.strftime('%Y%m%d')}.csv"
         resp = service.extf_import(client_id, filename, csv_bytes)
 

@@ -67,6 +67,8 @@ class DatevApiService:
         self._client_id = config["client_id"]
         self._client_secret = config["client_secret"]
         self._env_key = "sandbox" if config.get("sandbox") else "prod"
+        # Company whose DATEV token should be used (per-company connections).
+        self._company_id = config.get("company_id") or env.company.id
 
     # ------------------------------------------------------------------
     # OAuth2 + PKCE helpers
@@ -143,7 +145,7 @@ class DatevApiService:
 
     def _get_token(self) -> str:
         token = self._env["datev.token"].search(
-            [("company_id", "=", self._env.company.id)], limit=1
+            [("company_id", "=", self._company_id)], limit=1
         )
         if not token:
             raise UserError("DATEV: Not connected. Please authenticate first.")
