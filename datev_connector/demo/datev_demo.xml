@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Ensure EUR is active so it can be used as company currency. -->
+    <record id="base.EUR" model="res.currency">
+        <field name="active" eval="True" />
+    </record>
+
+    <!-- ── Two demo companies, mapped to DATEV sandbox clients 455148-1/2 ─────── -->
+    <record id="company_datev_sandbox_1" model="res.company">
+        <field name="name">DATEV Sandbox 455148-1</field>
+        <field name="currency_id" ref="base.EUR" />
+        <field name="country_id" ref="base.de" />
+        <field name="datev_consultant_number">455148</field>
+        <field name="datev_client_number">1</field>
+        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_account_number_length">4</field>
+    </record>
+
+    <record id="company_datev_sandbox_2" model="res.company">
+        <field name="name">DATEV Sandbox 455148-2</field>
+        <field name="currency_id" ref="base.EUR" />
+        <field name="country_id" ref="base.de" />
+        <field name="datev_consultant_number">455148</field>
+        <field name="datev_client_number">2</field>
+        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_account_number_length">4</field>
+    </record>
+
+    <!-- ── Admin user with access to BOTH companies ───────────────────────────── -->
+    <record id="user_datev_admin" model="res.users">
+        <field name="name">DATEV Demo Admin</field>
+        <field name="login">datev_admin</field>
+        <field name="password">datev_admin</field>
+        <field name="email">datev_admin@example.com</field>
+        <field name="company_id" ref="company_datev_sandbox_1" />
+        <field name="company_ids"
+               eval="[(6, 0, [ref('company_datev_sandbox_1'), ref('company_datev_sandbox_2')])]" />
+        <field name="groups_id"
+               eval="[(4, ref('base.group_user')), (4, ref('base.group_system'))]" />
+    </record>
+
+    <!-- ── Limited user with access to ONLY company 455148-1 ──────────────────── -->
+    <record id="user_datev_limited" model="res.users">
+        <field name="name">DATEV Demo Sachbearbeiter</field>
+        <field name="login">datev_user</field>
+        <field name="password">datev_user</field>
+        <field name="email">datev_user@example.com</field>
+        <field name="company_id" ref="company_datev_sandbox_1" />
+        <field name="company_ids" eval="[(6, 0, [ref('company_datev_sandbox_1')])]" />
+        <field name="groups_id" eval="[(4, ref('base.group_user'))]" />
+    </record>
+</odoo>
