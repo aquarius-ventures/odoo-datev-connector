@@ -26,7 +26,27 @@
         <field name="datev_account_number_length">4</field>
     </record>
 
-    <!-- ── Admin user with access to BOTH companies ───────────────────────────── -->
+    <record id="company_datev_sandbox_3" model="res.company">
+        <field name="name">Danger, we're striking thunder</field>
+        <field name="currency_id" ref="base.EUR" />
+        <field name="country_id" ref="base.de" />
+        <field name="datev_consultant_number">455148</field>
+        <field name="datev_client_number">3</field>
+        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_account_number_length">4</field>
+    </record>
+
+    <record id="company_datev_sandbox_4" model="res.company">
+        <field name="name">Crabsody, bluish limited</field>
+        <field name="currency_id" ref="base.EUR" />
+        <field name="country_id" ref="base.de" />
+        <field name="datev_consultant_number">455148</field>
+        <field name="datev_client_number">4</field>
+        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_account_number_length">4</field>
+    </record>
+
+    <!-- ── Admin user with access to ALL demo companies ───────────────────────── -->
     <record id="user_datev_admin" model="res.users">
         <field name="name">DATEV Demo Admin</field>
         <field name="login">datev_admin</field>
@@ -34,7 +54,7 @@
         <field name="email">datev_admin@example.com</field>
         <field name="company_id" ref="company_datev_sandbox_1" />
         <field name="company_ids"
-               eval="[(6, 0, [ref('company_datev_sandbox_1'), ref('company_datev_sandbox_2')])]" />
+               eval="[(6, 0, [ref('company_datev_sandbox_1'), ref('company_datev_sandbox_2'), ref('company_datev_sandbox_3'), ref('company_datev_sandbox_4')])]" />
         <field name="groups_id"
                eval="[(4, ref('base.group_user')), (4, ref('base.group_system'))]" />
     </record>
