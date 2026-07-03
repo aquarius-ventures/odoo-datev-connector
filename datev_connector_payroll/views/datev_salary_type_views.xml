@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_datev_salary_type_list" model="ir.ui.view">
+        <field name="name">datev.salary.type.list</field>
+        <field name="model">datev.salary.type</field>
+        <field name="arch" type="xml">
+            <tree string="DATEV Lohnarten" editable="bottom">
+                <field name="code" />
+                <field name="name" />
+                <field name="category" />
+                <field name="channel" />
+                <field name="external_key" optional="hide" />
+                <field name="company_id" groups="base.group_multi_company" />
+                <field name="active" widget="boolean_toggle" optional="show" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_datev_salary_type_form" model="ir.ui.view">
+        <field name="name">datev.salary.type.form</field>
+        <field name="model">datev.salary.type</field>
+        <field name="arch" type="xml">
+            <form string="DATEV Lohnart">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="code" />
+                            <field name="name" />
+                            <field name="category" />
+                            <field name="channel" />
+                        </group>
+                        <group>
+                            <field name="external_key" />
+                            <field name="company_id" groups="base.group_multi_company" />
+                            <field name="active" widget="boolean_toggle" />
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_datev_salary_type" model="ir.actions.act_window">
+        <field name="name">Lohnarten</field>
+        <field name="res_model">datev.salary.type</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

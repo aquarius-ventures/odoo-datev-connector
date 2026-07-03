@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- ── Payroll Run ────────────────────────────────────────────────────── -->
+    <record id="view_datev_payroll_run_list" model="ir.ui.view">
+        <field name="name">datev.payroll.run.list</field>
+        <field name="model">datev.payroll.run</field>
+        <field name="arch" type="xml">
+            <tree string="DATEV Lohnläufe">
+                <field name="name" />
+                <field name="company_id" groups="base.group_multi_company" />
+                <field name="reference_date" />
+                <field name="target_system" />
+                <field name="line_count" />
+                <field name="error_count" />
+                <field name="state" widget="badge"
+                       decoration-success="state in ('validated','done')"
+                       decoration-warning="state in ('draft','imported','sent')"
+                       decoration-danger="state == 'error'" />
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_datev_payroll_run_form" model="ir.ui.view">
+        <field name="name">datev.payroll.run.form</field>
+        <field name="model">datev.payroll.run</field>
+        <field name="arch" type="xml">
+            <form string="DATEV Lohnlauf">
+                <header>
+                    <button name="action_open_import" type="object"
+                            string="JSON importieren" class="btn-secondary" />
+                    <button name="action_validate" type="object"
+                            string="Validieren" class="btn-primary"
+                            invisible="state not in ('imported','error')" />
+                    <button name="action_transfer" type="object"
+                            string="An DATEV übertragen" class="btn-primary"
+                            invisible="state != 'validated'" />
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,imported,validated,sent,done" />
+                </header>
+                <sheet>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="error_count == 0">
+                        <strong><field name="error_count" class="oe_inline" /> Zeile(n) mit Fehlern.</strong>
+                        Bitte korrigieren (Lohnart/Personalnummer/Werte), bevor du validierst.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company" />
+                            <field name="reference_date" />
+                        </group>
+                        <group>
+                            <field name="target_system" />
+                            <field name="line_count" />
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Zeilen" name="lines">
+                            <field name="line_ids">
+                                <tree editable="bottom"
+                                      decoration-danger="error">
+                                    <field name="company_id" column_invisible="1" />
+                                    <field name="personnel_number" />
+                                    <field name="employee_id" />
+                                    <field name="salary_type_code" optional="show" />
+                                    <field name="salary_type_id" />
+                                    <field name="channel" optional="hide" />
+                                    <field name="value" />
+                                    <field name="factor" />
+                                    <field name="amount" optional="hide" />
+                                    <field name="cost_center" optional="show" />
+                                    <field name="processing_key" optional="show" />
+                                    <field name="payment_months" optional="hide" />
+                                    <field name="source" optional="hide" />
+                                    <field name="error" readonly="1" />
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_datev_payroll_run" model="ir.actions.act_window">
+        <field name="name">Lohnläufe</field>
+        <field name="res_model">datev.payroll.run</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- ── Import Wizard ──────────────────────────────────────────────────── -->
+    <record id="view_datev_payroll_import_wizard_form" model="ir.ui.view">
+        <field name="name">datev.payroll.import.wizard.form</field>
+        <field name="model">datev.payroll.import.wizard</field>
+        <field name="arch" type="xml">
+            <form string="DATEV Lohndaten importieren">
+                <group>
+                    <field name="company_id" groups="base.group_multi_company" />
+                    <field name="run_id" invisible="1" />
+                    <field name="json_file" filename="filename" />
+                    <field name="filename" invisible="1" />
+                </group>
+                <footer>
+                    <button name="action_import" type="object"
+                            string="Importieren" class="btn-primary" />
+                    <button string="Abbrechen" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_datev_payroll_import_wizard" model="ir.actions.act_window">
+        <field name="name">Lohndaten importieren (JSON)</field>
+        <field name="res_model">datev.payroll.import.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

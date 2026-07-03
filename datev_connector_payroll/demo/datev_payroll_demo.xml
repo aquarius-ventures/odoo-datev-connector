@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Lohnarten-Katalog (eure Codes) für die beiden primären Demo-Mandanten.
+         channel = Default aus category; hier explizit gesetzt. -->
+
+    <!-- ── Company 455148-1 (Alright Tonight incorporated) ─────────────────── -->
+    <record id="st_c1_10" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">10</field><field name="name">Gehalt</field>
+        <field name="category">fest_regelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c1_20" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">20</field><field name="name">Aushilfsgehalt</field>
+        <field name="category">fest_regelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c1_35" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">35</field><field name="name">Vertretungsbonus</field>
+        <field name="category">fest_unregelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c1_11" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">11</field><field name="name">Grundlohn</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_632" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">632</field><field name="name">Coaching</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_256" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">256</field><field name="name">Wazubi</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_71" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">71</field><field name="name">Schließen Abziehen Messen Spülen</field>
+        <field name="category">variabel_aufgabe</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_64" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">64</field><field name="name">Nachtschicht</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_63" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">63</field><field name="name">Samstagszulage</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c1_61" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="code">61</field><field name="name">Sonn- u. Feiertagszuschlag</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+
+    <!-- ── Company 455148-2 (C.o.d, Caring for you) ────────────────────────── -->
+    <record id="st_c2_10" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">10</field><field name="name">Gehalt</field>
+        <field name="category">fest_regelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c2_20" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">20</field><field name="name">Aushilfsgehalt</field>
+        <field name="category">fest_regelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c2_35" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">35</field><field name="name">Vertretungsbonus</field>
+        <field name="category">fest_unregelmaessig</field><field name="channel">gross_payment</field>
+    </record>
+    <record id="st_c2_11" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">11</field><field name="name">Grundlohn</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_632" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">632</field><field name="name">Coaching</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_256" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">256</field><field name="name">Wazubi</field>
+        <field name="category">variabel_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_71" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">71</field><field name="name">Schließen Abziehen Messen Spülen</field>
+        <field name="category">variabel_aufgabe</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_64" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">64</field><field name="name">Nachtschicht</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_63" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">63</field><field name="name">Samstagszulage</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+    <record id="st_c2_61" model="datev.salary.type">
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_2" />
+        <field name="code">61</field><field name="name">Sonn- u. Feiertagszuschlag</field>
+        <field name="category">zulage_zeit</field><field name="channel">month_record</field>
+    </record>
+</odoo>

@@ -9,6 +9,30 @@
     />
 
     <menuitem
+        id="menu_datev_payroll_runs"
+        name="Lohnläufe"
+        parent="menu_datev_payroll"
+        action="action_datev_payroll_run"
+        sequence="5"
+    />
+
+    <menuitem
+        id="menu_datev_payroll_import"
+        name="Lohndaten importieren"
+        parent="menu_datev_payroll"
+        action="action_datev_payroll_import_wizard"
+        sequence="6"
+    />
+
+    <menuitem
+        id="menu_datev_salary_type"
+        name="Lohnarten"
+        parent="menu_datev_payroll"
+        action="action_datev_salary_type"
+        sequence="7"
+    />
+
+    <menuitem
         id="menu_datev_payroll_export"
         name="Export Payroll to DATEV"
         parent="menu_datev_payroll"

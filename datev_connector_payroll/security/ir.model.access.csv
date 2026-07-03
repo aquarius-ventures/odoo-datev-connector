@@ -2,3 +2,10 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_datev_employee_mapping_hr_manager,datev.employee.mapping hr_manager,model_datev_employee_mapping,hr.group_hr_manager,1,1,1,1
 access_datev_employee_mapping_hr_user,datev.employee.mapping hr_user,model_datev_employee_mapping,hr.group_hr_user,1,0,0,0
 access_datev_payroll_export_wizard_hr_manager,datev.payroll.export.wizard hr_manager,model_datev_payroll_export_wizard,hr.group_hr_manager,1,1,1,0
+access_datev_salary_type_hr_manager,datev.salary.type hr_manager,model_datev_salary_type,hr.group_hr_manager,1,1,1,1
+access_datev_salary_type_hr_user,datev.salary.type hr_user,model_datev_salary_type,hr.group_hr_user,1,0,0,0
+access_datev_payroll_run_hr_manager,datev.payroll.run hr_manager,model_datev_payroll_run,hr.group_hr_manager,1,1,1,1
+access_datev_payroll_run_hr_user,datev.payroll.run hr_user,model_datev_payroll_run,hr.group_hr_user,1,0,0,0
+access_datev_payroll_line_hr_manager,datev.payroll.line hr_manager,model_datev_payroll_line,hr.group_hr_manager,1,1,1,1
+access_datev_payroll_line_hr_user,datev.payroll.line hr_user,model_datev_payroll_line,hr.group_hr_user,1,0,0,0
+access_datev_payroll_import_wizard_hr_manager,datev.payroll.import.wizard hr_manager,model_datev_payroll_import_wizard,hr.group_hr_manager,1,1,1,0
