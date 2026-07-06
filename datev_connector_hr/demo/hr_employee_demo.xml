@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Demo employees for company 455148-1 (Alright Tonight incorporated).
+         Personnel numbers match the sample payroll import CSV. Includes complete,
+         missing-number and missing-data cases to illustrate the sync readiness. -->
+
+    <!-- ── Complete & sync-ready (match sample CSV: 7009 / 7059 / 7096) ─────── -->
+    <record id="emp_demo_7009" model="hr.employee">
+        <field name="name">Anna Vollständig</field>
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="gender">female</field>
+        <field name="birthday">1990-05-14</field>
+        <field name="ssnid">65140590A012</field>
+        <field name="place_of_birth">Nürnberg</field>
+        <field name="country_of_birth" ref="base.de" />
+        <field name="private_street">Roonstr. 101</field>
+        <field name="private_zip">90429</field>
+        <field name="private_city">Nürnberg</field>
+        <field name="private_country_id" ref="base.de" />
+        <field name="datev_personnel_number">7009</field>
+        <field name="datev_tax_class">1</field>
+        <field name="datev_tax_id_number">12345678901</field>
+        <field name="datev_health_insurance_name">87880235</field>
+        <field name="datev_health_insurance_type">gkv</field>
+        <field name="datev_employment_start">2020-03-01</field>
+        <field name="datev_weekly_working_hours">40</field>
+    </record>
+
+    <record id="emp_demo_7059" model="hr.employee">
+        <field name="name">Bernd Komplett</field>
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="gender">male</field>
+        <field name="birthday">1985-11-02</field>
+        <field name="ssnid">02110285B034</field>
+        <field name="country_of_birth" ref="base.de" />
+        <field name="datev_personnel_number">7059</field>
+        <field name="datev_tax_class">3</field>
+        <field name="datev_tax_id_number">23456789012</field>
+        <field name="datev_health_insurance_name">87880235</field>
+        <field name="datev_health_insurance_type">gkv</field>
+        <field name="datev_employment_start">2018-09-15</field>
+        <field name="datev_weekly_working_hours">38.5</field>
+    </record>
+
+    <record id="emp_demo_7096" model="hr.employee">
+        <field name="name">Clara Fertig</field>
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="gender">female</field>
+        <field name="birthday">1998-01-20</field>
+        <field name="ssnid">20019878C056</field>
+        <field name="country_of_birth" ref="base.de" />
+        <field name="datev_personnel_number">7096</field>
+        <field name="datev_tax_class">1</field>
+        <field name="datev_tax_id_number">34567890123</field>
+        <field name="datev_health_insurance_name">10111011</field>
+        <field name="datev_health_insurance_type">pkv</field>
+        <field name="datev_employment_start">2023-06-01</field>
+        <field name="datev_weekly_working_hours">20</field>
+    </record>
+
+    <!-- ── Incomplete: NO personnel number (missing required field) ─────────── -->
+    <record id="emp_demo_no_number" model="hr.employee">
+        <field name="name">David OhneNummer</field>
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="gender">male</field>
+        <field name="birthday">1992-07-07</field>
+        <field name="ssnid">07079278D078</field>
+        <field name="datev_tax_class">1</field>
+        <field name="datev_tax_id_number">45678901234</field>
+        <field name="datev_health_insurance_name">87880235</field>
+        <field name="datev_health_insurance_type">gkv</field>
+    </record>
+
+    <!-- ── Incomplete: several required fields missing (SV-Nr., Steuerklasse, KK) -->
+    <record id="emp_demo_incomplete" model="hr.employee">
+        <field name="name">Erika Unvollständig</field>
+        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field name="gender">female</field>
+        <field name="datev_personnel_number">7100</field>
+        <field name="datev_tax_id_number">56789012345</field>
+    </record>
+</odoo>
