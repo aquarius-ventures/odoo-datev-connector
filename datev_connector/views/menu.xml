@@ -3,7 +3,7 @@
     <menuitem
         id="menu_datev_root"
         name="DATEV"
-        web_icon="datev_connector,static/description/datev_logo.png"
+        web_icon="datev_connector,static/description/datev_datenservice.png"
         sequence="90"
         groups="base.group_system"
     />
