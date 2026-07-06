@@ -31,8 +31,18 @@ class TestPayrollImport(TransactionCase):
     def _run_import(self, payload):
         wiz = self.Wizard.create({
             "company_id": self.company.id,
-            "json_file": base64.b64encode(json.dumps(payload).encode()),
+            "data_file": base64.b64encode(json.dumps(payload).encode()),
             "filename": "test.json",
+        })
+        action = wiz.action_import()
+        return self.env["datev.payroll.run"].browse(action["res_id"])
+
+    def _run_csv_import(self, csv_text, reference_date="2026-01"):
+        wiz = self.Wizard.create({
+            "company_id": self.company.id,
+            "reference_date": reference_date,
+            "data_file": base64.b64encode(csv_text.encode("utf-8")),
+            "filename": "portal.csv",
         })
         action = wiz.action_import()
         return self.env["datev.payroll.run"].browse(action["res_id"])
@@ -102,6 +112,27 @@ class TestPayrollImport(TransactionCase):
         self.company.datev_target_system = "lodas"
         run.action_validate()
         self.assertEqual(run.state, "validated")
+
+    # ── CSV import (portal format) ───────────────────────────────────────────
+    def test_csv_import_portal_format(self):
+        csv_text = (
+            "employee_no;factor;bs;cost_center;loan_type;amount\n"
+            "7009;35,25;1;;11;13,9\n"      # value=35.25, factor=13.9, code 11 (known)
+            "7009;601,69;2;0;10;\n"        # value=601.69, code 10 (known)
+        )
+        run = self._run_csv_import(csv_text)
+        self.assertEqual(run.reference_date, "2026-01")
+        self.assertEqual(run.line_count, 2)
+        by_code = {l.salary_type_code: l for l in run.line_ids}
+        l11 = by_code["11"]
+        self.assertEqual(l11.value, 35.25)     # CSV 'factor' → value
+        self.assertEqual(l11.factor, 13.9)     # CSV 'amount' → factor
+        self.assertEqual(l11.processing_key, "1")  # CSV 'bs'
+        self.assertEqual(l11.employee_id, self.emp)
+        self.assertEqual(l11.salary_type_id, self.st_11)
+        l10 = by_code["10"]
+        self.assertEqual(l10.value, 601.69)
+        self.assertEqual(l10.cost_center, "0")
 
     def test_transfer_blocked_in_p2(self):
         run = self._run_import({

@@ -96,9 +96,15 @@
                 <group>
                     <field name="company_id" groups="base.group_multi_company" />
                     <field name="run_id" invisible="1" />
-                    <field name="json_file" filename="filename" />
+                    <field name="reference_date" placeholder="z. B. 2026-01" />
+                    <field name="data_file" filename="filename" />
                     <field name="filename" invisible="1" />
                 </group>
+                <p class="text-muted">
+                    JSON oder Portal-CSV (Spalten:
+                    <code>employee_no;factor;bs;cost_center;loan_type;amount</code>).
+                    Für CSV bitte den Abrechnungsmonat oben angeben.
+                </p>
                 <footer>
                     <button name="action_import" type="object"
                             string="Importieren" class="btn-primary" />
