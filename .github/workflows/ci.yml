@@ -73,11 +73,14 @@ jobs:
             --stop-after-init --no-http
 
       - name: Run tests
+        env:
+          # odoo.tools.config reads ODOO_RC at import time — the reliable way
+          # to hand DB credentials to pytest-odoo.
+          ODOO_RC: /tmp/odoo-ci.conf
         run: |
           printf '[options]\ndb_host = localhost\ndb_port = 5432\ndb_user = odoo\ndb_password = odoo\naddons_path = /tmp/odoo/addons,.\n' > /tmp/odoo-ci.conf
           python -m pytest \
             --odoo-database=odoo_test \
-            --odoo-config=/tmp/odoo-ci.conf \
             --cov=. \
             --cov-report=xml \
             datev_connector/tests/ \
