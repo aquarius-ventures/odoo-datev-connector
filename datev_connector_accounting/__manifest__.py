@@ -6,7 +6,10 @@
     "author": "Aquarius Ventures",
     "website": "https://github.com/aquarius-ventures/odoo-datev-connector",
     "license": "LGPL-3",
-    "depends": ["datev_connector", "account_accountant"],
+    # "account" (Community) statt "account_accountant" (Enterprise): das Modul
+    # nutzt nur account.move/account.account/account.tax — Marketplace-Ziel
+    # ist Community-Kompatibilität.
+    "depends": ["datev_connector", "account"],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_cron.xml",
