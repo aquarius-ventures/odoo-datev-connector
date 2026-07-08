@@ -372,6 +372,12 @@ class ExtfGenerator:
         row[7] = self._resolve_account(pivot.account_id)  # 8 Gegenkonto
         row[8] = bu_key  # 9 BU-Schlüssel
         row[9] = move.date.strftime("%d%m") if move.date else ""  # 10 Belegdatum (DDMM)
+        # 20 Beleglink: BEDI "<guid>" links the posting to the uploaded voucher
+        # image (datev_connector_documents); inner quotes are doubled by the
+        # renderer as required by the spec.
+        document_guid = getattr(move, "datev_document_guid", False)
+        if document_guid:
+            row[19] = 'BEDI "%s"' % document_guid
         row[10] = self._sanitize_belegfeld(move.ref or move.name or "")  # 11 Belegfeld 1
         row[13] = self._sanitize_text(line.name or move.name or "", 60)  # 14 Buchungstext
         return row

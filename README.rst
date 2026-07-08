@@ -23,6 +23,8 @@ Supported DATEV data services (official names):
 
 * **DATEV Buchungsdatenservice** — transfer of posting data (DATEV-Format /
   EXTF) to DATEV Rechnungswesen
+* **DATEV Belegbilderservice Rechnungswesen** — transfer of voucher images
+  (invoice PDFs) to DATEV Unternehmen online, linked to the postings
 * **DATEV Lohnaustauschdatenservice (hr:exchange)** — transfer of employee
   master data to the DATEV payroll systems (LODAS / Lohn und Gehalt)
 
@@ -36,6 +38,10 @@ Modules
 `datev_connector_accounting <datev_connector_accounting/>`_
   Sync of accounting data via the DATEV-Format (EXTF, v700/13) using the
   DATEV Buchungsdatenservice.
+
+`datev_connector_documents <datev_connector_documents/>`_
+  Voucher images (Belegbilder) upload to DATEV Unternehmen online with
+  Beleglink (BEDI GUID) in the posting batch.
 
 `datev_connector_hr <datev_connector_hr/>`_
   Employee master data (Personalstammdaten) sync via the DATEV
@@ -51,6 +57,8 @@ Features
   against the DATEV cloud, per-company connections
 * Export Odoo journal entries as DATEV-Format Buchungsstapel (EXTF v700/13,
   CP1252) via the DATEV Buchungsdatenservice
+* Voucher images uploaded before the posting batch and linked via
+  Beleglink (BEDI GUID, duplicate-safe)
 * Employee master data sync (read-before-write workflow, asynchronous jobs
   with result verification) via hr:exchange
 * Import of DATEV payroll results

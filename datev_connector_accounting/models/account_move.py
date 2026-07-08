@@ -68,6 +68,14 @@ class AccountMove(models.Model):
     _POLL_INTERVAL = timedelta(seconds=60)
     _POLL_TIMEOUT = timedelta(hours=24)
 
+    def _datev_assign_document_guids(self):
+        """Hook (implemented by datev_connector_documents): assign voucher
+        GUIDs before EXTF generation so the Beleglink column can be filled."""
+
+    def _datev_upload_documents(self, service, client_id):
+        """Hook (implemented by datev_connector_documents): upload voucher
+        images BEFORE the EXTF file — DATEV requires this order."""
+
     def action_datev_export_single(self):
         self.ensure_one()
         if self.state != "posted":

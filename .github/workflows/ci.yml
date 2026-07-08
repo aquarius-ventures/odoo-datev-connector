@@ -69,7 +69,7 @@ jobs:
         run: |
           odoo -d odoo_test \
             --addons-path=/tmp/odoo/addons,. \
-            -i datev_connector,datev_connector_accounting,datev_connector_hr \
+            -i datev_connector,datev_connector_accounting,datev_connector_documents,datev_connector_hr \
             --stop-after-init --no-http
 
       # pytest-odoo connects as the OS user regardless of PGUSER/config, so a
@@ -91,6 +91,7 @@ jobs:
             --cov-report=xml \
             datev_connector/tests/ \
             datev_connector_accounting/tests/ \
+            datev_connector_documents/tests/ \
             datev_connector_hr/tests/
       - name: Upload coverage
         uses: codecov/codecov-action@v4

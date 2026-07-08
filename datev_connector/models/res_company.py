@@ -28,9 +28,9 @@ class ResCompany(models.Model):
         string="DATEV Datenservices",
         default="off",
         help="Deaktiviert = keine DATEV-Kommunikation für diese Firma. "
-             "Sandbox = Test gegen die DATEV Sandbox-Umgebung. "
-             "Produktion = Echtbetrieb (erfordert HTTPS-Redirect-URL und "
-             "produktive App im DATEV Developer Portal).",
+        "Sandbox = Test gegen die DATEV Sandbox-Umgebung. "
+        "Produktion = Echtbetrieb (erfordert HTTPS-Redirect-URL und "
+        "produktive App im DATEV Developer Portal).",
     )
     # Deprecated, kept for the 17.0.1.2.0 migration only — use datev_mode.
     datev_sandbox_mode = fields.Boolean(string="DATEV Sandbox Mode (deprecated)")
@@ -96,6 +96,12 @@ class ResCompany(models.Model):
     def datev_get_service_hr(self):
         self.ensure_one()
         return self.datev_service_hr and self._datev_module_installed("datev_connector_hr")
+
+    def datev_get_additional_scopes(self):
+        """Extension hook: DATEV scopes contributed by optional modules
+        (e.g. datev:accounting:documents by datev_connector_documents)."""
+        self.ensure_one()
+        return []
 
     def datev_get_client_id(self):
         """Return the DATEV client-id ('consultant-client') for this company."""

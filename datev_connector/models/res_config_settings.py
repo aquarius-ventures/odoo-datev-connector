@@ -147,10 +147,13 @@ class ResConfigSettings(models.TransientModel):
     def _get_datev_config(self, company=None):
         company = (company or self.env.company).sudo()
         if (company.datev_mode or "off") == "off":
-            raise UserError(_(
-                "DATEV ist für die Firma '%s' deaktiviert. Bitte in den "
-                "Einstellungen zuerst Sandbox oder Produktion wählen."
-            ) % company.name)
+            raise UserError(
+                _(
+                    "DATEV ist für die Firma '%s' deaktiviert. Bitte in den "
+                    "Einstellungen zuerst Sandbox oder Produktion wählen."
+                )
+                % company.name
+            )
         # sudo: credentials are group-restricted (base.group_system), but the
         # API service must also work for e.g. accountants triggering an export
         # or HR users triggering a sync — without exposing the fields to them.

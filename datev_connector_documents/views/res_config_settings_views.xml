@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="res_config_settings_view_form_datev_documents" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.datev.documents</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="datev_connector.res_config_settings_view_form_datev" />
+        <field name="arch" type="xml">
+            <xpath expr="//setting[@name='datev_service_accounting_setting']" position="after">
+                <setting
+                    string="DATEV Belegbilderservice"
+                    name="datev_service_documents_setting"
+                    help="Belegbilder werden vor dem Buchungsstapel übertragen und per Beleglink verknüpft."
+                >
+                    <field name="datev_service_documents" />
+                    <button
+                        name="action_datev_check_client_documents"
+                        type="object"
+                        string="Verbindung prüfen (Belegbilder)"
+                        class="btn-secondary"
+                        invisible="datev_connection_state == 'disconnected'"
+                    />
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

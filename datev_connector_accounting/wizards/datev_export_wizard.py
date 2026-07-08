@@ -76,6 +76,8 @@ class DatevExportWizard(models.TransientModel):
 
         from ..services.extf_generator import ExtfGenerator
 
+        # Voucher GUIDs must exist before generation (Beleglink column 20).
+        moves._datev_assign_document_guids()
         generator = ExtfGenerator(
             self.env,
             self.env.company,
@@ -111,6 +113,8 @@ class DatevExportWizard(models.TransientModel):
         service = DatevApiService(self.env, config)
 
         client_id = company.datev_get_client_id()
+        # DATEV order requirement: first the voucher images, then the EXTF file.
+        moves._datev_upload_documents(service, client_id)
         filename = f"EXTF_Buchungsstapel_{self.date_from.strftime('%Y%m%d')}_{self.date_to.strftime('%Y%m%d')}.csv"
         resp = service.extf_import(client_id, filename, csv_bytes)
 

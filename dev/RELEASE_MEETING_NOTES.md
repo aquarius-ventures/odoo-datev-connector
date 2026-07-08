@@ -79,9 +79,17 @@ Schnittstellenvorgaben.
 
 ## Funktionsumfang der Abnahme
 
-- Angemeldet wird der **Buchungsdatenservice ohne Belegbilder** (keine
-  Belegverknüpfung / accounting:documents) sowie der
+- Angemeldet werden der **Buchungsdatenservice inkl. Belegbild**
+  (Modul `datev_connector_documents`: Belegbilder werden VOR dem
+  Buchungsstapel per PUT `accounting-documents /clients/{id}/documents/{guid}`
+  übertragen; GUID von Odoo erzeugt → keine Dubletten; Metadata mit allen
+  drei Ablageebenen category/folder/register; Beleglink Spalte 20
+  `BEDI "<guid>"`), der **Belegbilderservice** ist optional pro Firma
+  zuschaltbar (eigener Scope datev:accounting:documents), sowie der
   **Lohnaustauschdatenservice (hr:exchange)** für Personalstammdaten.
   Der frühere LODAS-ASCII-Export wurde entfernt; ein späterer
   Bewegungsdaten-Transfer läuft über hr:exchange `month-records`
   (inkl. Storno-Logik: Änderung = negativer Wert + Neuerfassung).
+- Produktionsabnahme-Kriterium „Beleg muss in DATEV Rechnungswesen zur
+  Buchung angezeigt werden": im Testmandanten mit Musterrechnung + PDF
+  vorführen.
