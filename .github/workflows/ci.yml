@@ -57,7 +57,7 @@ jobs:
           git clone --depth 1 --branch 17.0 https://github.com/odoo/odoo.git /tmp/odoo
           pip install -r /tmp/odoo/requirements.txt
           pip install -e /tmp/odoo
-          pip install pytest-odoo coverage
+          pip install pytest-odoo pytest-cov coverage
 
       # datev_connector_payroll is excluded: it depends on hr_payroll
       # (Odoo Enterprise), which is not available in this community CI.
