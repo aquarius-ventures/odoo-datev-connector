@@ -4,13 +4,20 @@
         <field name="name">datev.api.log.list</field>
         <field name="model">datev.api.log</field>
         <field name="arch" type="xml">
-            <tree string="DATEV API Log" create="false" edit="false" default_order="request_ts desc">
+            <tree
+                string="DATEV API Log"
+                create="false"
+                edit="false"
+                default_order="request_ts desc"
+            >
                 <field name="request_ts" />
                 <field name="method" />
                 <field name="url" />
-                <field name="status_code"
-                       decoration-success="status_code &lt; 400"
-                       decoration-danger="status_code &gt;= 400" />
+                <field
+                    name="status_code"
+                    decoration-success="status_code &lt; 400"
+                    decoration-danger="status_code &gt;= 400"
+                />
                 <field name="x_global_transaction_id" optional="show" />
                 <field name="v_cap_request_id" optional="show" />
                 <field name="company_id" optional="hide" />
@@ -58,8 +65,16 @@
                 <field name="url" />
                 <field name="x_global_transaction_id" />
                 <field name="v_cap_request_id" />
-                <filter name="errors" string="Fehler (4XX/5XX)" domain="[('status_code', '&gt;=', 400)]" />
-                <filter name="today" string="Heute" domain="[('request_ts', '&gt;=', context_today().strftime('%Y-%m-%d'))]" />
+                <filter
+                    name="errors"
+                    string="Fehler (4XX/5XX)"
+                    domain="[('status_code', '&gt;=', 400)]"
+                />
+                <filter
+                    name="today"
+                    string="Heute"
+                    domain="[('request_ts', '&gt;=', context_today().strftime('%Y-%m-%d'))]"
+                />
             </search>
         </field>
     </record>

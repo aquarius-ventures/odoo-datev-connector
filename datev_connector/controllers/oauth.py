@@ -7,7 +7,6 @@ _logger = logging.getLogger(__name__)
 
 
 class DatevOAuthController(http.Controller):
-
     _SETTINGS_URL = "/web#action=base_setup.action_general_configuration"
 
     @http.route("/web/datev/oauth/callback", type="http", auth="user", methods=["GET"])

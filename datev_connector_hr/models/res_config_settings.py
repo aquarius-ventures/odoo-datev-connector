@@ -19,10 +19,10 @@ class ResConfigSettings(models.TransientModel):
         try:
             client = service.hr_exchange_get_client(client_id)
         except UserError as exc:
-            raise UserError(_(
-                "DATEV Lohnaustauschdatenservice: Berechtigungsprüfung für "
-                "Mandant %s fehlgeschlagen.\n%s"
-            ) % (client_id, exc)) from exc
+            raise UserError(
+                _("DATEV Lohnaustauschdatenservice: Berechtigungsprüfung für " "Mandant %s fehlgeschlagen.\n%s")
+                % (client_id, exc)
+            ) from exc
         name = client.get("name") or client.get("client_name") or client_id
         return {
             "type": "ir.actions.client",

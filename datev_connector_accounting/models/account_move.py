@@ -15,8 +15,8 @@ class AccountMove(models.Model):
         default=False,
         copy=False,
         help="Set after a successful EXTF export to DATEV Cloud. Reset "
-             "automatically when the DATEV import job fails, so the entry is "
-             "picked up by the next export again.",
+        "automatically when the DATEV import job fails, so the entry is "
+        "picked up by the next export again.",
     )
     datev_export_date = fields.Datetime(
         string="DATEV Export Date",
@@ -57,8 +57,7 @@ class AccountMove(models.Model):
         string="DATEV Job Next Poll",
         copy=False,
         readonly=True,
-        help="Earliest allowed poll time, taken from the Retry-After header "
-             "of the upload response.",
+        help="Earliest allowed poll time, taken from the Retry-After header " "of the upload response.",
     )
 
     # Poll cadence: no permanent polling (DATEV DONT). First poll after
@@ -83,10 +82,9 @@ class AccountMove(models.Model):
             raise UserError(_("No pending DATEV jobs found for the selected entries."))
         polled = pending._poll_datev_jobs()
         if not polled:
-            raise UserError(_(
-                "DATEV erlaubt höchstens eine Statusabfrage pro Minute je Job. "
-                "Bitte in Kürze erneut versuchen."
-            ))
+            raise UserError(
+                _("DATEV erlaubt höchstens eine Statusabfrage pro Minute je Job. " "Bitte in Kürze erneut versuchen.")
+            )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -99,10 +97,12 @@ class AccountMove(models.Model):
 
     @api.model
     def _cron_poll_datev_jobs(self):
-        pending = self.search([
-            ("datev_job_url", "!=", False),
-            ("datev_job_state", "=", "pending"),
-        ])
+        pending = self.search(
+            [
+                ("datev_job_url", "!=", False),
+                ("datev_job_state", "=", "pending"),
+            ]
+        )
         if pending:
             pending._poll_datev_jobs()
 
@@ -117,15 +117,11 @@ class AccountMove(models.Model):
         # token/config), then by job URL (one upload covers many moves).
         for company in self.mapped("company_id"):
             moves = self.filtered(lambda m: m.company_id == company)
-            token = self.env["datev.token"].sudo().search(
-                [("company_id", "=", company.id)], limit=1
-            )
+            token = self.env["datev.token"].sudo().search([("company_id", "=", company.id)], limit=1)
             if not token or token.state != "connected":
                 # No connection (e.g. RT expired): don't generate error spam —
                 # the user is asked to reconnect via the settings status.
-                _logger.info(
-                    "DATEV EXTF poll skipped for %s: not connected.", company.name
-                )
+                _logger.info("DATEV EXTF poll skipped for %s: not connected.", company.name)
                 continue
             config = self.env["res.config.settings"]._get_datev_config(company)
             service = DatevApiService(self.env, config)
@@ -146,12 +142,14 @@ class AccountMove(models.Model):
                 if last_poll and now - last_poll < self._POLL_INTERVAL:
                     continue
                 if created_at and now - created_at > self._POLL_TIMEOUT:
-                    job_moves.write({
-                        "datev_job_state": "failed",
-                        "datev_job_error": "Zeitüberschreitung (24 h) — Status unbekannt, "
-                                           "bitte manuell in DATEV prüfen.",
-                        "datev_exported": False,
-                    })
+                    job_moves.write(
+                        {
+                            "datev_job_state": "failed",
+                            "datev_job_error": "Zeitüberschreitung (24 h) — Status unbekannt, "
+                            "bitte manuell in DATEV prüfen.",
+                            "datev_exported": False,
+                        }
+                    )
                     _logger.error("DATEV EXTF job %s timed out after 24 h.", job_url)
                     continue
 

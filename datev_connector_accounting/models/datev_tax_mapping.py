@@ -30,8 +30,7 @@ class DatevTaxMapping(models.Model):
         string="BU-Schlüssel",
         required=True,
         size=4,
-        help="DATEV posting key (column 9), e.g. 3 = 19% USt, 2 = 7% USt, "
-             "9 = 19% Vorsteuer, 8 = 7% Vorsteuer.",
+        help="DATEV posting key (column 9), e.g. 3 = 19% USt, 2 = 7% USt, " "9 = 19% Vorsteuer, 8 = 7% Vorsteuer.",
     )
     active = fields.Boolean(default=True)
 

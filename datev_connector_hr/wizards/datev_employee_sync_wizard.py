@@ -72,7 +72,5 @@ class DatevEmployeeSyncWizard(models.TransientModel):
             self.employee_ids.write({"datev_sync_enabled": True})
         elif self.action == "transfer":
             self.employee_ids.write({"datev_sync_enabled": True})
-            self.employee_ids.with_context(
-                _datev_sync_in_progress=False
-            )._action_datev_sync()
+            self.employee_ids.with_context(_datev_sync_in_progress=False)._action_datev_sync()
         return {"type": "ir.actions.act_window_close"}

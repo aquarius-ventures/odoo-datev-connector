@@ -53,10 +53,14 @@
         <field name="password">datev_admin</field>
         <field name="email">datev_admin@example.com</field>
         <field name="company_id" ref="company_datev_sandbox_1" />
-        <field name="company_ids"
-               eval="[(6, 0, [ref('company_datev_sandbox_1'), ref('company_datev_sandbox_2'), ref('company_datev_sandbox_3'), ref('company_datev_sandbox_4')])]" />
-        <field name="groups_id"
-               eval="[(4, ref('base.group_user')), (4, ref('base.group_system'))]" />
+        <field
+            name="company_ids"
+            eval="[(6, 0, [ref('company_datev_sandbox_1'), ref('company_datev_sandbox_2'), ref('company_datev_sandbox_3'), ref('company_datev_sandbox_4')])]"
+        />
+        <field
+            name="groups_id"
+            eval="[(4, ref('base.group_user')), (4, ref('base.group_system'))]"
+        />
     </record>
 
     <!-- ── Limited user with access to ONLY company 455148-1 ──────────────────── -->
@@ -66,7 +70,10 @@
         <field name="password">datev_user</field>
         <field name="email">datev_user@example.com</field>
         <field name="company_id" ref="company_datev_sandbox_1" />
-        <field name="company_ids" eval="[(6, 0, [ref('company_datev_sandbox_1')])]" />
+        <field
+            name="company_ids"
+            eval="[(6, 0, [ref('company_datev_sandbox_1')])]"
+        />
         <field name="groups_id" eval="[(4, ref('base.group_user'))]" />
     </record>
 </odoo>

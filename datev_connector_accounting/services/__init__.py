@@ -1,2 +1,1 @@
-from . import extf_generator
-from . import extf_parser
+from . import extf_generator, extf_parser

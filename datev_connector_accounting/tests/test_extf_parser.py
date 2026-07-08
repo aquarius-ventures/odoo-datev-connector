@@ -2,7 +2,6 @@ from odoo.tests.common import TransactionCase
 
 
 class TestExtfParser(TransactionCase):
-
     def _make_parser(self):
         from odoo.addons.datev_connector_accounting.services.extf_parser import ExtfParser
 

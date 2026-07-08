@@ -7,7 +7,10 @@
     <!-- ── Complete & sync-ready (match sample CSV: 7009 / 7059 / 7096) ─────── -->
     <record id="emp_demo_7009" model="hr.employee">
         <field name="name">Anna Vollständig</field>
-        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field
+            name="company_id"
+            ref="datev_connector.company_datev_sandbox_1"
+        />
         <field name="gender">female</field>
         <field name="birthday">1990-05-14</field>
         <field name="ssnid">65140590A012</field>
@@ -28,7 +31,10 @@
 
     <record id="emp_demo_7059" model="hr.employee">
         <field name="name">Bernd Komplett</field>
-        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field
+            name="company_id"
+            ref="datev_connector.company_datev_sandbox_1"
+        />
         <field name="gender">male</field>
         <field name="birthday">1985-11-02</field>
         <field name="ssnid">02110285B034</field>
@@ -44,7 +50,10 @@
 
     <record id="emp_demo_7096" model="hr.employee">
         <field name="name">Clara Fertig</field>
-        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field
+            name="company_id"
+            ref="datev_connector.company_datev_sandbox_1"
+        />
         <field name="gender">female</field>
         <field name="birthday">1998-01-20</field>
         <field name="ssnid">20019878C056</field>
@@ -61,7 +70,10 @@
     <!-- ── Incomplete: NO personnel number (missing required field) ─────────── -->
     <record id="emp_demo_no_number" model="hr.employee">
         <field name="name">David OhneNummer</field>
-        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field
+            name="company_id"
+            ref="datev_connector.company_datev_sandbox_1"
+        />
         <field name="gender">male</field>
         <field name="birthday">1992-07-07</field>
         <field name="ssnid">07079278D078</field>
@@ -74,7 +86,10 @@
     <!-- ── Incomplete: several required fields missing (SV-Nr., Steuerklasse, KK) -->
     <record id="emp_demo_incomplete" model="hr.employee">
         <field name="name">Erika Unvollständig</field>
-        <field name="company_id" ref="datev_connector.company_datev_sandbox_1" />
+        <field
+            name="company_id"
+            ref="datev_connector.company_datev_sandbox_1"
+        />
         <field name="gender">female</field>
         <field name="datev_personnel_number">7100</field>
         <field name="datev_tax_id_number">56789012345</field>

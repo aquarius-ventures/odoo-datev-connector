@@ -31,13 +31,15 @@ class DatevOauthFlow(models.TransientModel):
 
     @api.model
     def _begin(self, state, nonce, code_verifier, company_id):
-        self.sudo().create({
-            "state": state,
-            "nonce": nonce,
-            "code_verifier": code_verifier,
-            "company_id": company_id,
-            "user_id": self.env.uid,
-        })
+        self.sudo().create(
+            {
+                "state": state,
+                "nonce": nonce,
+                "code_verifier": code_verifier,
+                "company_id": company_id,
+                "user_id": self.env.uid,
+            }
+        )
 
     @api.model
     def _consume(self, state):

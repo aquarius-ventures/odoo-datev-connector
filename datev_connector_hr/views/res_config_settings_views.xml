@@ -3,14 +3,22 @@
     <record id="res_config_settings_view_form_datev_hr" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.datev.hr</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="datev_connector.res_config_settings_view_form_datev" />
+        <field
+            name="inherit_id"
+            ref="datev_connector.res_config_settings_view_form_datev"
+        />
         <field name="arch" type="xml">
-            <xpath expr="//setting[@name='datev_service_hr_setting']" position="inside">
-                <button name="action_datev_check_client_hr"
-                        type="object"
-                        string="Verbindung prüfen (hr:exchange)"
-                        class="btn-secondary"
-                        invisible="datev_connection_state == 'disconnected'" />
+            <xpath
+                expr="//setting[@name='datev_service_hr_setting']"
+                position="inside"
+            >
+                <button
+                    name="action_datev_check_client_hr"
+                    type="object"
+                    string="Verbindung prüfen (hr:exchange)"
+                    class="btn-secondary"
+                    invisible="datev_connection_state == 'disconnected'"
+                />
             </xpath>
         </field>
     </record>

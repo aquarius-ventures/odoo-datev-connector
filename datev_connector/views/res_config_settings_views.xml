@@ -6,125 +6,210 @@
         <field name="inherit_id" ref="base.res_config_settings_view_form" />
         <field name="arch" type="xml">
             <xpath expr="//form" position="inside">
-                <app data-string="DATEV Cloud" string="DATEV Cloud" name="datev_connector"
-                     logo="/datev_connector/static/description/icon.png">
+                <app
+                    data-string="DATEV Cloud"
+                    string="DATEV Cloud"
+                    name="datev_connector"
+                    logo="/datev_connector/static/description/icon.png"
+                >
 
                     <block title="Connection" name="datev_connection_block">
-                        <div class="alert alert-danger col-12" role="alert"
-                             invisible="not datev_last_error">
+                        <div
+                            class="alert alert-danger col-12"
+                            role="alert"
+                            invisible="not datev_last_error"
+                        >
                             <strong>Letzter Verbindungsfehler: </strong>
-                            <field name="datev_last_error" readonly="1" nolabel="1" />
+                            <field
+                                name="datev_last_error"
+                                readonly="1"
+                                nolabel="1"
+                            />
                         </div>
                         <setting string="Status" name="datev_status_setting">
-                            <field name="datev_connection_state"
-                                   widget="badge"
-                                   readonly="1"
-                                   decoration-success="datev_connection_state == 'connected'"
-                                   decoration-warning="datev_connection_state == 'connected_unverified'"
-                                   decoration-danger="datev_connection_state == 'disconnected'" />
-                            <div class="text-muted"
-                                 invisible="datev_connection_state != 'connected_unverified'">
+                            <field
+                                name="datev_connection_state"
+                                widget="badge"
+                                readonly="1"
+                                decoration-success="datev_connection_state == 'connected'"
+                                decoration-warning="datev_connection_state == 'connected_unverified'"
+                                decoration-danger="datev_connection_state == 'disconnected'"
+                            />
+                            <div
+                                class="text-muted"
+                                invisible="datev_connection_state != 'connected_unverified'"
+                            >
                                 Verbindung besteht, aber der Mandant wurde noch nicht geprüft —
                                 bitte „Mandant prüfen" ausführen.
                             </div>
                         </setting>
-                        <setting string="Verbindungsdetails" name="datev_token_info_setting"
-                                 help="Pflichtangaben zur DATEV-Verbindung: Ablauf des Refresh-Tokens,
-                                       ausstellende Person und gewährte Scopes.">
-                            <div invisible="datev_connection_state == 'disconnected'">
+                        <setting
+                            string="Verbindungsdetails"
+                            name="datev_token_info_setting"
+                            help="Pflichtangaben zur DATEV-Verbindung: Ablauf des Refresh-Tokens,
+                                       ausstellende Person und gewährte Scopes."
+                        >
+                            <div
+                                invisible="datev_connection_state == 'disconnected'"
+                            >
                                 <div>
                                     <strong>Refresh-Token gültig bis: </strong>
-                                    <field name="datev_refresh_token_expiry" readonly="1" class="oe_inline" />
+                                    <field
+                                        name="datev_refresh_token_expiry"
+                                        readonly="1"
+                                        class="oe_inline"
+                                    />
                                 </div>
                                 <div>
                                     <strong>Verbunden durch: </strong>
-                                    <field name="datev_issued_by_name" readonly="1" class="oe_inline" />
+                                    <field
+                                        name="datev_issued_by_name"
+                                        readonly="1"
+                                        class="oe_inline"
+                                    />
                                 </div>
                                 <div>
                                     <strong>Gewährte Scopes: </strong>
-                                    <field name="datev_granted_scopes" readonly="1" class="oe_inline" />
+                                    <field
+                                        name="datev_granted_scopes"
+                                        readonly="1"
+                                        class="oe_inline"
+                                    />
                                 </div>
                             </div>
                             <div>
-                                <a href="https://apps.datev.de/tokrevui" target="_blank">
+                                <a
+                                    href="https://apps.datev.de/tokrevui"
+                                    target="_blank"
+                                >
                                     Verbundene Anwendungen in DATEV verwalten/widerrufen
                                 </a>
                             </div>
                         </setting>
-                        <setting string="Sandbox Mode" name="datev_sandbox_setting"
-                                 help="Use DATEV sandbox endpoints for testing">
+                        <setting
+                            string="Sandbox Mode"
+                            name="datev_sandbox_setting"
+                            help="Use DATEV sandbox endpoints for testing"
+                        >
                             <field name="datev_sandbox_mode" />
                         </setting>
                     </block>
 
-                    <block title="Datenservices" name="datev_services_block"
-                           help="Wählen Sie aktiv aus, welche DATEV Datenservices diese Firma nutzt.
+                    <block
+                        title="Datenservices"
+                        name="datev_services_block"
+                        help="Wählen Sie aktiv aus, welche DATEV Datenservices diese Firma nutzt.
                                  Es werden nur die dafür nötigen Scopes bei DATEV angefragt.
                                  Der jeweilige Datenservice muss beim Steuerberater bzw. DATEV
-                                 bestellt und aktiviert sein: http://go.datev.de/datenservices-einrichten">
-                        <setting string="DATEV Buchungsdatenservice" name="datev_service_accounting_setting"
-                                 help="Übertragung von Buchungsdaten (EXTF). Benötigt das Modul DATEV Cloud Connector - Accounting.">
+                                 bestellt und aktiviert sein: http://go.datev.de/datenservices-einrichten"
+                    >
+                        <setting
+                            string="DATEV Buchungsdatenservice"
+                            name="datev_service_accounting_setting"
+                            help="Übertragung von Buchungsdaten (EXTF). Benötigt das Modul DATEV Cloud Connector - Accounting."
+                        >
                             <field name="datev_service_accounting" />
                         </setting>
-                        <setting string="DATEV Lohnaustauschdatenservice (hr:exchange)" name="datev_service_hr_setting"
-                                 help="Übertragung von Personalstammdaten. Benötigt das Modul DATEV Cloud Connector - HR.">
+                        <setting
+                            string="DATEV Lohnaustauschdatenservice (hr:exchange)"
+                            name="datev_service_hr_setting"
+                            help="Übertragung von Personalstammdaten. Benötigt das Modul DATEV Cloud Connector - HR."
+                        >
                             <field name="datev_service_hr" />
                         </setting>
                     </block>
 
                     <block title="Credentials" name="datev_credentials_block">
-                        <setting string="Client ID" name="datev_client_id_setting">
+                        <setting
+                            string="Client ID"
+                            name="datev_client_id_setting"
+                        >
                             <field name="datev_client_id" />
                         </setting>
-                        <setting string="Client Secret" name="datev_client_secret_setting">
+                        <setting
+                            string="Client Secret"
+                            name="datev_client_secret_setting"
+                        >
                             <field name="datev_client_secret" password="True" />
                         </setting>
-                        <setting string="Redirect-URL" name="datev_redirect_uri_setting"
-                                 help="Muss im DATEV Developer Portal exakt so registriert sein.
-                                       Produktiv: nur HTTPS, kein localhost, keine IP-Adressen.">
+                        <setting
+                            string="Redirect-URL"
+                            name="datev_redirect_uri_setting"
+                            help="Muss im DATEV Developer Portal exakt so registriert sein.
+                                       Produktiv: nur HTTPS, kein localhost, keine IP-Adressen."
+                        >
                             <field name="datev_redirect_uri" readonly="1" />
                         </setting>
-                        <setting string="Consultant Number (client-id)" name="datev_consultant_number_setting"
-                                 help="Erster Teil der DATEV client-id (Beraternummer des Mandanten, bis zu 7 Stellen).
+                        <setting
+                            string="Consultant Number (client-id)"
+                            name="datev_consultant_number_setting"
+                            help="Erster Teil der DATEV client-id (Beraternummer des Mandanten, bis zu 7 Stellen).
                                        Das ist NICHT zwingend Ihre Login-Beraternummer, sondern der Wert, den DATEV für
-                                       den Zielmandanten vorgibt (Sandbox z. B. 455148). Über 'Fetch from DATEV' abrufbar.">
-                            <field name="datev_consultant_number" placeholder="z. B. 455148" />
+                                       den Zielmandanten vorgibt (Sandbox z. B. 455148). Über 'Fetch from DATEV' abrufbar."
+                        >
+                            <field
+                                name="datev_consultant_number"
+                                placeholder="z. B. 455148"
+                            />
                         </setting>
-                        <setting string="Client Number (client-id)" name="datev_client_number_setting"
-                                 help="Zweiter Teil der client-id (Mandantennummer, bis zu 5 Stellen). Sandbox z. B. 1.">
-                            <field name="datev_client_number" placeholder="z. B. 1" />
-                            <button name="action_datev_fetch_clients"
-                                    type="object"
-                                    string="Mandanten abrufen"
-                                    class="btn-secondary"
-                                    invisible="datev_connection_state == 'disconnected'" />
-                            <button name="action_datev_check_client"
-                                    type="object"
-                                    string="Mandant prüfen"
-                                    class="btn-secondary"
-                                    invisible="datev_connection_state == 'disconnected'" />
-                            <div class="text-muted" invisible="not datev_client_check_info">
-                                <field name="datev_client_check_info" readonly="1" />
+                        <setting
+                            string="Client Number (client-id)"
+                            name="datev_client_number_setting"
+                            help="Zweiter Teil der client-id (Mandantennummer, bis zu 5 Stellen). Sandbox z. B. 1."
+                        >
+                            <field
+                                name="datev_client_number"
+                                placeholder="z. B. 1"
+                            />
+                            <button
+                                name="action_datev_fetch_clients"
+                                type="object"
+                                string="Mandanten abrufen"
+                                class="btn-secondary"
+                                invisible="datev_connection_state == 'disconnected'"
+                            />
+                            <button
+                                name="action_datev_check_client"
+                                type="object"
+                                string="Mandant prüfen"
+                                class="btn-secondary"
+                                invisible="datev_connection_state == 'disconnected'"
+                            />
+                            <div
+                                class="text-muted"
+                                invisible="not datev_client_check_info"
+                            >
+                                <field
+                                    name="datev_client_check_info"
+                                    readonly="1"
+                                />
                             </div>
                         </setting>
-                        <setting string="Account Number Length" name="datev_account_number_length_setting"
-                                 help="Digits in DATEV account numbers (Sachkontonummernlänge). SKR03/SKR04 = 4.">
+                        <setting
+                            string="Account Number Length"
+                            name="datev_account_number_length_setting"
+                            help="Digits in DATEV account numbers (Sachkontonummernlänge). SKR03/SKR04 = 4."
+                        >
                             <field name="datev_account_number_length" />
                         </setting>
                     </block>
 
                     <block title="Actions" name="datev_actions_block">
                         <setting name="datev_connect_setting">
-                            <button name="action_datev_connect"
-                                    type="object"
-                                    string="Connect with DATEV"
-                                    class="btn-primary"
-                                    invisible="datev_connection_state == 'connected'" />
-                            <button name="action_datev_disconnect"
-                                    type="object"
-                                    string="Disconnect"
-                                    class="btn-secondary"
-                                    invisible="datev_connection_state == 'disconnected'" />
+                            <button
+                                name="action_datev_connect"
+                                type="object"
+                                string="Connect with DATEV"
+                                class="btn-primary"
+                                invisible="datev_connection_state == 'connected'"
+                            />
+                            <button
+                                name="action_datev_disconnect"
+                                type="object"
+                                string="Disconnect"
+                                class="btn-secondary"
+                                invisible="datev_connection_state == 'disconnected'"
+                            />
                         </setting>
                     </block>
 

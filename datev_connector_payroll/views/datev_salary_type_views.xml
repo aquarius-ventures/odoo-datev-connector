@@ -31,7 +31,10 @@
                         </group>
                         <group>
                             <field name="external_key" />
-                            <field name="company_id" groups="base.group_multi_company" />
+                            <field
+                                name="company_id"
+                                groups="base.group_multi_company"
+                            />
                             <field name="active" widget="boolean_toggle" />
                         </group>
                     </group>

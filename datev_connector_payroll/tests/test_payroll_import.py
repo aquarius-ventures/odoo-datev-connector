@@ -6,7 +6,6 @@ from odoo.tests.common import TransactionCase
 
 
 class TestPayrollImport(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -14,36 +13,57 @@ class TestPayrollImport(TransactionCase):
         cls.company.datev_target_system = "lodas"
         cls.Wizard = cls.env["datev.payroll.import.wizard"]
         # Catalog
-        cls.st_11 = cls.env["datev.salary.type"].create({
-            "company_id": cls.company.id, "code": "11", "name": "Grundlohn",
-            "category": "variabel_zeit", "channel": "month_record",
-        })
-        cls.st_10 = cls.env["datev.salary.type"].create({
-            "company_id": cls.company.id, "code": "10", "name": "Gehalt",
-            "category": "fest_regelmaessig", "channel": "gross_payment",
-        })
+        cls.st_11 = cls.env["datev.salary.type"].create(
+            {
+                "company_id": cls.company.id,
+                "code": "11",
+                "name": "Grundlohn",
+                "category": "variabel_zeit",
+                "channel": "month_record",
+            }
+        )
+        cls.st_10 = cls.env["datev.salary.type"].create(
+            {
+                "company_id": cls.company.id,
+                "code": "10",
+                "name": "Gehalt",
+                "category": "fest_regelmaessig",
+                "channel": "gross_payment",
+            }
+        )
         # Employee matched by personnel number
-        cls.emp = cls.env["hr.employee"].sudo().create({
-            "name": "Test Mitarbeiter", "company_id": cls.company.id,
-            "datev_personnel_number": "7009",
-        })
+        cls.emp = (
+            cls.env["hr.employee"]
+            .sudo()
+            .create(
+                {
+                    "name": "Test Mitarbeiter",
+                    "company_id": cls.company.id,
+                    "datev_personnel_number": "7009",
+                }
+            )
+        )
 
     def _run_import(self, payload):
-        wiz = self.Wizard.create({
-            "company_id": self.company.id,
-            "data_file": base64.b64encode(json.dumps(payload).encode()),
-            "filename": "test.json",
-        })
+        wiz = self.Wizard.create(
+            {
+                "company_id": self.company.id,
+                "data_file": base64.b64encode(json.dumps(payload).encode()),
+                "filename": "test.json",
+            }
+        )
         action = wiz.action_import()
         return self.env["datev.payroll.run"].browse(action["res_id"])
 
     def _run_csv_import(self, csv_text, reference_date="2026-01"):
-        wiz = self.Wizard.create({
-            "company_id": self.company.id,
-            "reference_date": reference_date,
-            "data_file": base64.b64encode(csv_text.encode("utf-8")),
-            "filename": "portal.csv",
-        })
+        wiz = self.Wizard.create(
+            {
+                "company_id": self.company.id,
+                "reference_date": reference_date,
+                "data_file": base64.b64encode(csv_text.encode("utf-8")),
+                "filename": "portal.csv",
+            }
+        )
         action = wiz.action_import()
         return self.env["datev.payroll.run"].browse(action["res_id"])
 
@@ -59,21 +79,26 @@ class TestPayrollImport(TransactionCase):
 
     # ── import: matching, german decimals, unknown code ──────────────────────
     def test_import_creates_run_and_lines(self):
-        run = self._run_import({
-            "reference_date": "2026-01",
-            "employees": [
-                {"personnel_number": 7009, "lines": [
-                    {"salary_type": "11", "value": "160", "factor": "13,9", "processing_key": "1"},
-                    {"salary_type": "10", "value": 3500, "cost_center": "0"},
-                    {"salary_type": "9999", "value": 5},
-                ]},
-            ],
-        })
+        run = self._run_import(
+            {
+                "reference_date": "2026-01",
+                "employees": [
+                    {
+                        "personnel_number": 7009,
+                        "lines": [
+                            {"salary_type": "11", "value": "160", "factor": "13,9", "processing_key": "1"},
+                            {"salary_type": "10", "value": 3500, "cost_center": "0"},
+                            {"salary_type": "9999", "value": 5},
+                        ],
+                    },
+                ],
+            }
+        )
         self.assertEqual(run.reference_date, "2026-01")
         self.assertEqual(run.state, "imported")
         self.assertEqual(run.line_count, 3)
 
-        by_code = {l.salary_type_code: l for l in run.line_ids}
+        by_code = {line.salary_type_code: line for line in run.line_ids}
         # matched line
         l11 = by_code["11"]
         self.assertEqual(l11.salary_type_id, self.st_11)
@@ -89,22 +114,26 @@ class TestPayrollImport(TransactionCase):
         self.assertEqual(run.error_count, 1)
 
     def test_import_unmatched_employee_flagged(self):
-        run = self._run_import({
-            "reference_date": "2026-01",
-            "employees": [
-                {"personnel_number": 8888, "lines": [{"salary_type": "11", "value": 10}]},
-            ],
-        })
+        run = self._run_import(
+            {
+                "reference_date": "2026-01",
+                "employees": [
+                    {"personnel_number": 8888, "lines": [{"salary_type": "11", "value": 10}]},
+                ],
+            }
+        )
         line = run.line_ids
         self.assertFalse(line.employee_id)
         self.assertTrue(line.error)
 
     # ── target_system guard ──────────────────────────────────────────────────
     def test_validate_requires_target_system(self):
-        run = self._run_import({
-            "reference_date": "2026-01",
-            "employees": [{"personnel_number": 7009, "lines": [{"salary_type": "11", "value": 10}]}],
-        })
+        run = self._run_import(
+            {
+                "reference_date": "2026-01",
+                "employees": [{"personnel_number": 7009, "lines": [{"salary_type": "11", "value": 10}]}],
+            }
+        )
         self.company.datev_target_system = False
         with self.assertRaises(UserError):
             run.action_validate()
@@ -117,16 +146,16 @@ class TestPayrollImport(TransactionCase):
     def test_csv_import_portal_format(self):
         csv_text = (
             "employee_no;factor;bs;cost_center;loan_type;amount\n"
-            "7009;35,25;1;;11;13,9\n"      # value=35.25, factor=13.9, code 11 (known)
-            "7009;601,69;2;0;10;\n"        # value=601.69, code 10 (known)
+            "7009;35,25;1;;11;13,9\n"  # value=35.25, factor=13.9, code 11 (known)
+            "7009;601,69;2;0;10;\n"  # value=601.69, code 10 (known)
         )
         run = self._run_csv_import(csv_text)
         self.assertEqual(run.reference_date, "2026-01")
         self.assertEqual(run.line_count, 2)
-        by_code = {l.salary_type_code: l for l in run.line_ids}
+        by_code = {line.salary_type_code: line for line in run.line_ids}
         l11 = by_code["11"]
-        self.assertEqual(l11.value, 35.25)     # CSV 'factor' → value
-        self.assertEqual(l11.factor, 13.9)     # CSV 'amount' → factor
+        self.assertEqual(l11.value, 35.25)  # CSV 'factor' → value
+        self.assertEqual(l11.factor, 13.9)  # CSV 'amount' → factor
         self.assertEqual(l11.processing_key, "1")  # CSV 'bs'
         self.assertEqual(l11.employee_id, self.emp)
         self.assertEqual(l11.salary_type_id, self.st_11)
@@ -135,9 +164,11 @@ class TestPayrollImport(TransactionCase):
         self.assertEqual(l10.cost_center, "0")
 
     def test_transfer_blocked_in_p2(self):
-        run = self._run_import({
-            "reference_date": "2026-01",
-            "employees": [{"personnel_number": 7009, "lines": [{"salary_type": "11", "value": 10}]}],
-        })
+        run = self._run_import(
+            {
+                "reference_date": "2026-01",
+                "employees": [{"personnel_number": 7009, "lines": [{"salary_type": "11", "value": 10}]}],
+            }
+        )
         with self.assertRaises(UserError):
             run.action_transfer()

@@ -3,12 +3,18 @@
     <record id="res_config_settings_view_form_datev_payroll" model="ir.ui.view">
         <field name="name">res.config.settings.view.form.datev.payroll</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="datev_connector.res_config_settings_view_form_datev" />
+        <field
+            name="inherit_id"
+            ref="datev_connector.res_config_settings_view_form_datev"
+        />
         <field name="arch" type="xml">
             <xpath expr="//app[@name='datev_connector']" position="inside">
                 <block title="Payroll / Lohn" name="datev_payroll_block">
-                    <setting string="Abrechnungssystem" name="datev_target_system_setting"
-                             help="LODAS oder Lohn und Gehalt. Pflicht, bevor Lohndaten übertragen werden.">
+                    <setting
+                        string="Abrechnungssystem"
+                        name="datev_target_system_setting"
+                        help="LODAS oder Lohn und Gehalt. Pflicht, bevor Lohndaten übertragen werden."
+                    >
                         <field name="datev_target_system" />
                     </setting>
                 </block>

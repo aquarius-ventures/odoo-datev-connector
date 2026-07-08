@@ -12,131 +12,260 @@
                  o_datev_optional (grau) = wird übertragen, blockiert aber nicht. -->
 
             <!-- ── Pflichtfelder im Personal-Tab (grün) ───────────────────── -->
-            <xpath expr="//page[@name='personal_information']//field[@name='birthday']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='birthday']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_required</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='gender']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='gender']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_required</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='ssnid']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='ssnid']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_required</attribute>
             </xpath>
 
             <!-- ── Optionale Felder im Personal-Tab (grau) ────────────────── -->
-            <xpath expr="//page[@name='personal_information']//field[@name='place_of_birth']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='place_of_birth']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='country_of_birth']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='country_of_birth']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='marital']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='marital']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='children']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='children']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
 
             <!-- ── Adressfelder (grau) – werden als address-Objekt übertragen ── -->
-            <xpath expr="//page[@name='personal_information']//field[@name='private_street']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='private_street']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='private_city']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='private_city']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='private_zip']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='private_zip']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='private_country_id']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='private_country_id']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
-            <xpath expr="//page[@name='personal_information']//field[@name='bank_account_id']" position="attributes">
+            <xpath
+                expr="//page[@name='personal_information']//field[@name='bank_account_id']"
+                position="attributes"
+            >
                 <attribute name="class">o_datev_optional</attribute>
             </xpath>
 
             <!-- ── Neuer DATEV / LODAS Tab ────────────────────────────────── -->
             <xpath expr="//notebook" position="inside">
-                <page string="DATEV / LODAS" name="datev_lodas"
-                      groups="hr.group_hr_user">
+                <page
+                    string="DATEV / LODAS"
+                    name="datev_lodas"
+                    groups="hr.group_hr_user"
+                >
 
                     <!-- Sync-Status -->
                     <group string="DATEV Cloud Sync">
                         <group>
-                            <field name="datev_sync_enabled" widget="boolean_toggle" />
-                            <field name="datev_last_sync" readonly="1"
-                                   invisible="not datev_last_sync" />
-                            <field name="datev_sync_created" readonly="1"
-                                   invisible="not datev_sync_created" />
+                            <field
+                                name="datev_sync_enabled"
+                                widget="boolean_toggle"
+                            />
+                            <field
+                                name="datev_last_sync"
+                                readonly="1"
+                                invisible="not datev_last_sync"
+                            />
+                            <field
+                                name="datev_sync_created"
+                                readonly="1"
+                                invisible="not datev_sync_created"
+                            />
                         </group>
                         <group>
-                            <field name="datev_job_state" readonly="1"
-                                   widget="badge"
-                                   decoration-warning="datev_job_state == 'pending'"
-                                   decoration-success="datev_job_state == 'succeeded'"
-                                   decoration-danger="datev_job_state == 'failed'"
-                                   invisible="not datev_job_state" />
-                            <field name="datev_job_phase" readonly="1"
-                                   invisible="datev_job_state != 'pending'" />
-                            <button name="action_datev_refresh_job_status" type="object"
-                                    string="Status abrufen" class="btn-secondary btn-sm"
-                                    invisible="datev_job_state != 'pending'" />
+                            <field
+                                name="datev_job_state"
+                                readonly="1"
+                                widget="badge"
+                                decoration-warning="datev_job_state == 'pending'"
+                                decoration-success="datev_job_state == 'succeeded'"
+                                decoration-danger="datev_job_state == 'failed'"
+                                invisible="not datev_job_state"
+                            />
+                            <field
+                                name="datev_job_phase"
+                                readonly="1"
+                                invisible="datev_job_state != 'pending'"
+                            />
+                            <button
+                                name="action_datev_refresh_job_status"
+                                type="object"
+                                string="Status abrufen"
+                                class="btn-secondary btn-sm"
+                                invisible="datev_job_state != 'pending'"
+                            />
                         </group>
                     </group>
 
-                    <div class="alert alert-danger mb-3" role="alert"
-                         invisible="not datev_sync_error">
+                    <div
+                        class="alert alert-danger mb-3"
+                        role="alert"
+                        invisible="not datev_sync_error"
+                    >
                         <strong>Sync-Fehler: </strong>
-                        <field name="datev_sync_error" readonly="1" nolabel="1" />
+                        <field
+                            name="datev_sync_error"
+                            readonly="1"
+                            nolabel="1"
+                        />
                     </div>
 
-                    <div class="alert alert-danger mb-3" role="alert"
-                         invisible="datev_job_state != 'failed'">
+                    <div
+                        class="alert alert-danger mb-3"
+                        role="alert"
+                        invisible="datev_job_state != 'failed'"
+                    >
                         <strong>Job-Fehler: </strong>
-                        <field name="datev_job_error" readonly="1" nolabel="1" />
+                        <field
+                            name="datev_job_error"
+                            readonly="1"
+                            nolabel="1"
+                        />
                     </div>
 
                     <group string="Allgemein">
                         <group>
-                            <field name="datev_personnel_number" class="o_datev_required" />
-                            <field name="datev_cost_center" class="o_datev_optional" />
+                            <field
+                                name="datev_personnel_number"
+                                class="o_datev_required"
+                            />
+                            <field
+                                name="datev_cost_center"
+                                class="o_datev_optional"
+                            />
                         </group>
                     </group>
 
                     <group string="Steuer">
                         <group>
-                            <field name="datev_tax_class" class="o_datev_required" />
-                            <field name="datev_tax_id_number" class="o_datev_required" />
-                            <field name="datev_church_tax" class="o_datev_optional" />
+                            <field
+                                name="datev_tax_class"
+                                class="o_datev_required"
+                            />
+                            <field
+                                name="datev_tax_id_number"
+                                class="o_datev_required"
+                            />
+                            <field
+                                name="datev_church_tax"
+                                class="o_datev_optional"
+                            />
                         </group>
                         <group>
-                            <field name="datev_employment_type" class="o_datev_optional" />
-                            <field name="datev_flat_rate_tax" class="o_datev_optional" />
+                            <field
+                                name="datev_employment_type"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_flat_rate_tax"
+                                class="o_datev_optional"
+                            />
                         </group>
                     </group>
 
                     <group string="Sozialversicherung">
                         <group>
-                            <field name="datev_health_insurance_name" class="o_datev_required" />
-                            <field name="datev_health_insurance_type" class="o_datev_required" />
-                            <field name="datev_child_allowance" class="o_datev_optional" />
+                            <field
+                                name="datev_health_insurance_name"
+                                class="o_datev_required"
+                            />
+                            <field
+                                name="datev_health_insurance_type"
+                                class="o_datev_required"
+                            />
+                            <field
+                                name="datev_child_allowance"
+                                class="o_datev_optional"
+                            />
                         </group>
                         <group>
-                            <field name="datev_si_nursing" class="o_datev_optional" />
-                            <field name="datev_si_pension" class="o_datev_optional" />
-                            <field name="datev_si_unemployment" class="o_datev_optional" />
-                            <field name="datev_si_childless_surcharge" widget="boolean_toggle"
-                                   class="o_datev_optional" />
+                            <field
+                                name="datev_si_nursing"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_si_pension"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_si_unemployment"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_si_childless_surcharge"
+                                widget="boolean_toggle"
+                                class="o_datev_optional"
+                            />
                         </group>
                     </group>
 
                     <group string="Beschäftigung &amp; Vergütung">
                         <group>
-                            <field name="datev_employment_start" class="o_datev_optional" />
-                            <field name="datev_weekly_working_hours" class="o_datev_optional" />
-                            <field name="datev_employee_type" class="o_datev_optional" />
+                            <field
+                                name="datev_employment_start"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_weekly_working_hours"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_employee_type"
+                                class="o_datev_optional"
+                            />
                         </group>
                         <group>
-                            <field name="datev_vacation_days" class="o_datev_optional" />
-                            <field name="datev_payment_method" class="o_datev_optional" />
+                            <field
+                                name="datev_vacation_days"
+                                class="o_datev_optional"
+                            />
+                            <field
+                                name="datev_payment_method"
+                                class="o_datev_optional"
+                            />
                         </group>
                     </group>
 

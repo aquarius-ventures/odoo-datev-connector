@@ -5,6 +5,7 @@ ir.config_parameter. They now live per company on res.company. Copy the existing
 global values onto the main company so an existing single-Mandant setup keeps
 working after the upgrade.
 """
+
 import logging
 
 from odoo import SUPERUSER_ID, api
@@ -22,8 +23,7 @@ _STR_PARAMS = {
 def migrate(cr, version):
     env = api.Environment(cr, SUPERUSER_ID, {})
     ICP = env["ir.config_parameter"].sudo()
-    company = env.ref("base.main_company", raise_if_not_found=False) or \
-        env["res.company"].search([], limit=1)
+    company = env.ref("base.main_company", raise_if_not_found=False) or env["res.company"].search([], limit=1)
     if not company:
         return
 
@@ -43,5 +43,4 @@ def migrate(cr, version):
 
     if vals:
         company.write(vals)
-        _logger.info("DATEV: migrated global settings onto company %s: %s",
-                     company.name, list(vals))
+        _logger.info("DATEV: migrated global settings onto company %s: %s", company.name, list(vals))

@@ -51,14 +51,14 @@ class DatevClientSelectWizardLine(models.TransientModel):
         if not self.consultant_number or not self.client_number:
             raise UserError(_("Dieser Eintrag enthält keine vollständige Berater-/Mandantennummer."))
         has_service = _has_accounting_service(self.services)
-        company.write({
-            "datev_consultant_number": self.consultant_number,
-            "datev_client_number": self.client_number,
-            "datev_client_verified": has_service,
-            "datev_client_check_info": (
-                "%s — Services: %s" % (self.name or "?", self.services or "–")
-            )[:250],
-        })
+        company.write(
+            {
+                "datev_consultant_number": self.consultant_number,
+                "datev_client_number": self.client_number,
+                "datev_client_verified": has_service,
+                "datev_client_check_info": ("%s — Services: %s" % (self.name or "?", self.services or "–"))[:250],
+            }
+        )
         if not has_service:
             return {
                 "type": "ir.actions.client",

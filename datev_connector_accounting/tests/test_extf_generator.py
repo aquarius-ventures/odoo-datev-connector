@@ -5,21 +5,14 @@ from odoo.tests.common import TransactionCase
 
 
 class TestExtfGenerator(TransactionCase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
         cls.journal = cls.env["account.journal"].search([("type", "=", "general")], limit=1)
-        cls.account_cash = cls.env["account.account"].search(
-            [("account_type", "=", "asset_cash")], limit=1
-        )
-        cls.account_income = cls.env["account.account"].search(
-            [("account_type", "=", "income")], limit=1
-        )
-        cls.account_receivable = cls.env["account.account"].search(
-            [("account_type", "=", "asset_receivable")], limit=1
-        )
+        cls.account_cash = cls.env["account.account"].search([("account_type", "=", "asset_cash")], limit=1)
+        cls.account_income = cls.env["account.account"].search([("account_type", "=", "income")], limit=1)
+        cls.account_receivable = cls.env["account.account"].search([("account_type", "=", "asset_receivable")], limit=1)
 
     def _make_generator(self, date_from=None, date_to=None):
         from odoo.addons.datev_connector_accounting.services.extf_generator import ExtfGenerator
@@ -37,14 +30,26 @@ class TestExtfGenerator(TransactionCase):
                 "journal_id": self.journal.id,
                 "date": date(2025, 1, 15),
                 "line_ids": [
-                    (0, 0, {
-                        "account_id": self.account_cash.id,
-                        "debit": amount, "credit": 0.0, "name": text,
-                    }),
-                    (0, 0, {
-                        "account_id": self.account_income.id,
-                        "debit": 0.0, "credit": amount, "name": text,
-                    }),
+                    (
+                        0,
+                        0,
+                        {
+                            "account_id": self.account_cash.id,
+                            "debit": amount,
+                            "credit": 0.0,
+                            "name": text,
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "account_id": self.account_income.id,
+                            "debit": 0.0,
+                            "credit": amount,
+                            "name": text,
+                        },
+                    ),
                 ],
             }
         )
@@ -151,33 +156,43 @@ class TestExtfGenerator(TransactionCase):
     def test_invoice_gross_export_with_bu_key(self):
         """Variant B: with a BU mapping, an invoice exports one gross row per
         income line (no separate tax row → no double-booked revenue)."""
-        tax = self.env["account.tax"].create({
-            "name": "USt 19% (Test)",
-            "amount": 19.0,
-            "type_tax_use": "sale",
-            "company_id": self.company.id,
-        })
-        self.env["datev.tax.mapping"].create({
-            "company_id": self.company.id,
-            "tax_id": tax.id,
-            "datev_bu_key": "3",
-        })
+        tax = self.env["account.tax"].create(
+            {
+                "name": "USt 19% (Test)",
+                "amount": 19.0,
+                "type_tax_use": "sale",
+                "company_id": self.company.id,
+            }
+        )
+        self.env["datev.tax.mapping"].create(
+            {
+                "company_id": self.company.id,
+                "tax_id": tax.id,
+                "datev_bu_key": "3",
+            }
+        )
         partner = self.env["res.partner"].create({"name": "Testkunde"})
-        invoice = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": partner.id,
-            "invoice_date": date(2025, 1, 20),
-            "date": date(2025, 1, 20),
-            "invoice_line_ids": [
-                (0, 0, {
-                    "name": "Beratung",
-                    "quantity": 1,
-                    "price_unit": 100.0,
-                    "account_id": self.account_income.id,
-                    "tax_ids": [(6, 0, [tax.id])],
-                }),
-            ],
-        })
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": partner.id,
+                "invoice_date": date(2025, 1, 20),
+                "date": date(2025, 1, 20),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Beratung",
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                            "account_id": self.account_income.id,
+                            "tax_ids": [(6, 0, [tax.id])],
+                        },
+                    ),
+                ],
+            }
+        )
         invoice.action_post()
         content = self._decode(self._make_generator().generate(invoice))
         data_rows = [r for r in content.split("\r\n")[2:] if r]
@@ -194,28 +209,36 @@ class TestExtfGenerator(TransactionCase):
 
     def test_invoice_without_bu_mapping_exports_tax_row(self):
         """Variant A fallback: without BU mapping the tax line becomes its own row."""
-        tax = self.env["account.tax"].create({
-            "name": "USt 19% (Test unmapped)",
-            "amount": 19.0,
-            "type_tax_use": "sale",
-            "company_id": self.company.id,
-        })
+        tax = self.env["account.tax"].create(
+            {
+                "name": "USt 19% (Test unmapped)",
+                "amount": 19.0,
+                "type_tax_use": "sale",
+                "company_id": self.company.id,
+            }
+        )
         partner = self.env["res.partner"].create({"name": "Testkunde 2"})
-        invoice = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": partner.id,
-            "invoice_date": date(2025, 1, 21),
-            "date": date(2025, 1, 21),
-            "invoice_line_ids": [
-                (0, 0, {
-                    "name": "Beratung",
-                    "quantity": 1,
-                    "price_unit": 100.0,
-                    "account_id": self.account_income.id,
-                    "tax_ids": [(6, 0, [tax.id])],
-                }),
-            ],
-        })
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": partner.id,
+                "invoice_date": date(2025, 1, 21),
+                "date": date(2025, 1, 21),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Beratung",
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                            "account_id": self.account_income.id,
+                            "tax_ids": [(6, 0, [tax.id])],
+                        },
+                    ),
+                ],
+            }
+        )
         invoice.action_post()
         content = self._decode(self._make_generator().generate(invoice))
         data_rows = [r for r in content.split("\r\n")[2:] if r]

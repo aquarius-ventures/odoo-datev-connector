@@ -15,12 +15,20 @@
                         <field name="consultant_number" />
                         <field name="client_number" />
                         <field name="services" />
-                        <button name="action_select" type="object"
-                                string="Übernehmen" class="btn-primary btn-sm" />
+                        <button
+                            name="action_select"
+                            type="object"
+                            string="Übernehmen"
+                            class="btn-primary btn-sm"
+                        />
                     </tree>
                 </field>
                 <footer>
-                    <button string="Schließen" class="btn-secondary" special="cancel" />
+                    <button
+                        string="Schließen"
+                        class="btn-secondary"
+                        special="cancel"
+                    />
                 </footer>
             </form>
         </field>

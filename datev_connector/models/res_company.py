@@ -37,15 +37,15 @@ class ResCompany(models.Model):
     datev_service_accounting = fields.Boolean(
         string="DATEV Buchungsdatenservice",
         help="Fragt die Scopes datev:accounting:extf-files-import und "
-             "datev:accounting:clients an. Der Buchungsdatenservice muss beim "
-             "Steuerberater/DATEV bestellt und aktiviert sein: "
-             "http://go.datev.de/datenservices-einrichten",
+        "datev:accounting:clients an. Der Buchungsdatenservice muss beim "
+        "Steuerberater/DATEV bestellt und aktiviert sein: "
+        "http://go.datev.de/datenservices-einrichten",
     )
     datev_service_hr = fields.Boolean(
         string="DATEV Lohnaustauschdatenservice (hr:exchange)",
         help="Fragt den Scope datev:hr:payrolldataexchange an. Der "
-             "Lohnaustauschdatenservice muss beim Steuerberater/DATEV bestellt "
-             "und aktiviert sein: http://go.datev.de/datenservices-einrichten",
+        "Lohnaustauschdatenservice muss beim Steuerberater/DATEV bestellt "
+        "und aktiviert sein: http://go.datev.de/datenservices-einrichten",
     )
 
     datev_client_verified = fields.Boolean(
@@ -53,8 +53,8 @@ class ResCompany(models.Model):
         readonly=True,
         copy=False,
         help="Der Zugriff auf den Mandanten und der gebuchte Datenservice "
-             "wurden über GET /clients/{client-id} bestätigt. Wird bei "
-             "Änderung der Berater-/Mandantennummer zurückgesetzt.",
+        "wurden über GET /clients/{client-id} bestätigt. Wird bei "
+        "Änderung der Berater-/Mandantennummer zurückgesetzt.",
     )
     datev_client_check_info = fields.Char(
         string="DATEV Mandantenprüfung",
@@ -72,16 +72,12 @@ class ResCompany(models.Model):
 
     def _datev_module_installed(self, name):
         return bool(
-            self.env["ir.module.module"].sudo().search_count(
-                [("name", "=", name), ("state", "=", "installed")]
-            )
+            self.env["ir.module.module"].sudo().search_count([("name", "=", name), ("state", "=", "installed")])
         )
 
     def datev_get_service_accounting(self):
         self.ensure_one()
-        return self.datev_service_accounting and self._datev_module_installed(
-            "datev_connector_accounting"
-        )
+        return self.datev_service_accounting and self._datev_module_installed("datev_connector_accounting")
 
     def datev_get_service_hr(self):
         self.ensure_one()
@@ -91,8 +87,11 @@ class ResCompany(models.Model):
         """Return the DATEV client-id ('consultant-client') for this company."""
         self.ensure_one()
         if not self.datev_consultant_number or not self.datev_client_number:
-            raise UserError(_(
-                "DATEV: Bitte Consultant Number und Client Number für Firma "
-                "'%s' in den Einstellungen (DATEV Cloud) hinterlegen."
-            ) % self.name)
+            raise UserError(
+                _(
+                    "DATEV: Bitte Consultant Number und Client Number für Firma "
+                    "'%s' in den Einstellungen (DATEV Cloud) hinterlegen."
+                )
+                % self.name
+            )
         return f"{self.datev_consultant_number}-{self.datev_client_number}"

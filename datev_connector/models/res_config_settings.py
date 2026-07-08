@@ -11,33 +11,42 @@ class ResConfigSettings(models.TransientModel):
 
     # Per-company DATEV settings (stored on res.company).
     datev_client_id = fields.Char(
-        related="company_id.datev_client_id", readonly=False,
+        related="company_id.datev_client_id",
+        readonly=False,
         groups="base.group_system",
     )
     datev_client_secret = fields.Char(
-        related="company_id.datev_client_secret", readonly=False,
+        related="company_id.datev_client_secret",
+        readonly=False,
         groups="base.group_system",
     )
     datev_sandbox_mode = fields.Boolean(
-        related="company_id.datev_sandbox_mode", readonly=False,
+        related="company_id.datev_sandbox_mode",
+        readonly=False,
     )
     datev_consultant_number = fields.Char(
-        related="company_id.datev_consultant_number", readonly=False,
+        related="company_id.datev_consultant_number",
+        readonly=False,
     )
     datev_client_number = fields.Char(
-        related="company_id.datev_client_number", readonly=False,
+        related="company_id.datev_client_number",
+        readonly=False,
     )
     datev_account_number_length = fields.Selection(
-        related="company_id.datev_account_number_length", readonly=False,
+        related="company_id.datev_account_number_length",
+        readonly=False,
     )
     datev_last_error = fields.Char(
-        related="company_id.datev_last_error", readonly=True,
+        related="company_id.datev_last_error",
+        readonly=True,
     )
     datev_service_accounting = fields.Boolean(
-        related="company_id.datev_service_accounting", readonly=False,
+        related="company_id.datev_service_accounting",
+        readonly=False,
     )
     datev_service_hr = fields.Boolean(
-        related="company_id.datev_service_hr", readonly=False,
+        related="company_id.datev_service_hr",
+        readonly=False,
     )
     datev_connection_state = fields.Selection(
         [
@@ -72,8 +81,7 @@ class ResConfigSettings(models.TransientModel):
     datev_redirect_uri = fields.Char(
         string="OAuth Redirect-URL",
         compute="_compute_datev_redirect_uri",
-        help="Diese URL muss im DATEV Developer Portal exakt so als "
-             "Redirect-URL der App registriert sein.",
+        help="Diese URL muss im DATEV Developer Portal exakt so als " "Redirect-URL der App registriert sein.",
     )
 
     def _compute_datev_redirect_uri(self):
@@ -104,19 +112,20 @@ class ResConfigSettings(models.TransientModel):
         except ValueError:
             pass
         if parsed.scheme != "https" or host in ("localhost", "127.0.0.1") or is_ip:
-            raise UserError(_(
-                "DATEV Produktivbetrieb: Die Redirect-URL muss HTTPS sein und darf "
-                "weder localhost noch eine IP-Adresse enthalten (aktuelle Basis-URL: %s). "
-                "Apps mit unzulässigen Redirect-URLs werden von DATEV seit 01.03.2026 "
-                "gesperrt. Bitte 'web.base.url' auf die öffentliche HTTPS-Domain stellen."
-            ) % (base_url or "<leer>"))
+            raise UserError(
+                _(
+                    "DATEV Produktivbetrieb: Die Redirect-URL muss HTTPS sein und darf "
+                    "weder localhost noch eine IP-Adresse enthalten (aktuelle Basis-URL: %s). "
+                    "Apps mit unzulässigen Redirect-URLs werden von DATEV seit 01.03.2026 "
+                    "gesperrt. Bitte 'web.base.url' auf die öffentliche HTTPS-Domain stellen."
+                )
+                % (base_url or "<leer>")
+            )
 
     @api.depends("company_id", "datev_client_id")
     def _compute_datev_connection_state(self):
         for rec in self:
-            token = self.env["datev.token"].search(
-                [("company_id", "=", rec.company_id.id)], limit=1
-            )
+            token = self.env["datev.token"].search([("company_id", "=", rec.company_id.id)], limit=1)
             if not token or token.state != "connected":
                 rec.datev_connection_state = "disconnected"
             elif not rec.company_id.datev_client_verified:
@@ -129,9 +138,7 @@ class ResConfigSettings(models.TransientModel):
     @api.depends("company_id")
     def _compute_datev_token_info(self):
         for rec in self:
-            token = self.env["datev.token"].search(
-                [("company_id", "=", rec.company_id.id)], limit=1
-            )
+            token = self.env["datev.token"].search([("company_id", "=", rec.company_id.id)], limit=1)
             rec.datev_refresh_token_expiry = token.refresh_token_expiry if token else False
             rec.datev_issued_by_name = token.issued_by_name if token else False
             rec.datev_granted_scopes = token.scope if token else False
@@ -162,11 +169,13 @@ class ResConfigSettings(models.TransientModel):
 
         service = DatevApiService(self.env, config)
         if service.get_scope() == "openid profile":
-            raise UserError(_(
-                "Bitte aktivieren Sie zuerst mindestens einen DATEV Datenservice "
-                "(z. B. DATEV Buchungsdatenservice) in den Einstellungen. "
-                "Es werden nur die Scopes angefragt, die Sie tatsächlich nutzen."
-            ))
+            raise UserError(
+                _(
+                    "Bitte aktivieren Sie zuerst mindestens einen DATEV Datenservice "
+                    "(z. B. DATEV Buchungsdatenservice) in den Einstellungen. "
+                    "Es werden nur die Scopes angefragt, die Sie tatsächlich nutzen."
+                )
+            )
         auth_url = service.get_authorization_url()
         return {
             "type": "ir.actions.act_url",
@@ -176,9 +185,7 @@ class ResConfigSettings(models.TransientModel):
 
     def action_datev_disconnect(self):
         self.ensure_one()
-        token = self.env["datev.token"].search(
-            [("company_id", "=", self.company_id.id)], limit=1
-        )
+        token = self.env["datev.token"].search([("company_id", "=", self.company_id.id)], limit=1)
         if token:
             token.action_disconnect()
 
@@ -204,18 +211,24 @@ class ResConfigSettings(models.TransientModel):
         if not items:
             raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 
-        wizard = self.env["datev.client.select.wizard"].create({
-            "company_id": self.company_id.id,
-            "line_ids": [
-                (0, 0, {
-                    "name": c.get("name", ""),
-                    "consultant_number": str(c.get("consultant_number", "")),
-                    "client_number": str(c.get("client_number", "")),
-                    "services": _services_to_str(c) or "–",
-                })
-                for c in items
-            ],
-        })
+        wizard = self.env["datev.client.select.wizard"].create(
+            {
+                "company_id": self.company_id.id,
+                "line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": c.get("name", ""),
+                            "consultant_number": str(c.get("consultant_number", "")),
+                            "client_number": str(c.get("client_number", "")),
+                            "services": _services_to_str(c) or "–",
+                        },
+                    )
+                    for c in items
+                ],
+            }
+        )
         return {
             "type": "ir.actions.act_window",
             "name": _("DATEV Mandant auswählen"),
@@ -243,12 +256,12 @@ class ResConfigSettings(models.TransientModel):
         client = service.accounting_clients_get(client_id)
         services_str = _services_to_str(client) or "–"
         has_service = _has_accounting_service(services_str)
-        company.write({
-            "datev_client_verified": has_service,
-            "datev_client_check_info": (
-                "%s — Services: %s" % (client.get("name", client_id), services_str)
-            )[:250],
-        })
+        company.write(
+            {
+                "datev_client_verified": has_service,
+                "datev_client_check_info": ("%s — Services: %s" % (client.get("name", client_id), services_str))[:250],
+            }
+        )
         if not has_service:
             return {
                 "type": "ir.actions.client",
@@ -259,7 +272,8 @@ class ResConfigSettings(models.TransientModel):
                         "Mandant %s ist erreichbar, aber der Buchungsdatenservice "
                         "ist nicht gebucht (Services: %s). Bitte beim Steuerberater/"
                         "DATEV aktivieren: http://go.datev.de/datenservices-einrichten"
-                    ) % (client_id, services_str),
+                    )
+                    % (client_id, services_str),
                     "type": "warning",
                     "sticky": True,
                 },
@@ -269,8 +283,10 @@ class ResConfigSettings(models.TransientModel):
             "tag": "display_notification",
             "params": {
                 "title": _("DATEV Mandantenprüfung"),
-                "message": _("Mandant %s bestätigt — %s") % (
-                    client.get("name", client_id), services_str,
+                "message": _("Mandant %s bestätigt — %s")
+                % (
+                    client.get("name", client_id),
+                    services_str,
                 ),
                 "type": "success",
             },

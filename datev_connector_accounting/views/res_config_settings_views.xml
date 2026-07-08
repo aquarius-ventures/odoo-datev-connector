@@ -1,20 +1,37 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <odoo>
-    <record id="res_config_settings_view_form_datev_accounting" model="ir.ui.view">
-        <field name="name">res.config.settings.view.form.datev.accounting</field>
+    <record
+        id="res_config_settings_view_form_datev_accounting"
+        model="ir.ui.view"
+    >
+        <field
+            name="name"
+        >res.config.settings.view.form.datev.accounting</field>
         <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="datev_connector.res_config_settings_view_form_datev" />
+        <field
+            name="inherit_id"
+            ref="datev_connector.res_config_settings_view_form_datev"
+        />
         <field name="arch" type="xml">
-            <xpath expr="//block[@name='datev_credentials_block']" position="after">
+            <xpath
+                expr="//block[@name='datev_credentials_block']"
+                position="after"
+            >
                 <block title="EXTF Export" name="datev_extf_block">
-                    <setting string="Festschreibung" name="datev_extf_festschreibung_setting"
-                             help="EXTF-Header Feld 21. Aktiviert (Standard) = Buchungen werden
+                    <setting
+                        string="Festschreibung"
+                        name="datev_extf_festschreibung_setting"
+                        help="EXTF-Header Feld 21. Aktiviert (Standard) = Buchungen werden
                                    beim Import festgeschrieben (GoBD). Nur in Abstimmung mit dem
-                                   Steuerberater deaktivieren.">
+                                   Steuerberater deaktivieren."
+                    >
                         <field name="datev_extf_festschreibung" />
                     </setting>
-                    <setting string="Sachkontenrahmen" name="datev_chart_of_accounts_setting"
-                             help="In DATEV verwendeter Kontenrahmen (SKR03/SKR04), EXTF-Header Feld 27.">
+                    <setting
+                        string="Sachkontenrahmen"
+                        name="datev_chart_of_accounts_setting"
+                        help="In DATEV verwendeter Kontenrahmen (SKR03/SKR04), EXTF-Header Feld 27."
+                    >
                         <field name="datev_chart_of_accounts" />
                     </setting>
                 </block>

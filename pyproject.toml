@@ -6,6 +6,10 @@ target-version = "py310"
 select = ["E", "F", "W", "I"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Odoo convention: __init__.py files import submodules for side-effect registration.
+"__init__.py" = ["F401"]
+
 [tool.pylint.master]
 load-plugins = [
     "pylint_odoo",

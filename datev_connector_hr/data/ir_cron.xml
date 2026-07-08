@@ -13,7 +13,9 @@
     </record>
 
     <record id="ir_cron_datev_sync_dirty" model="ir.cron">
-        <field name="name">DATEV: Übertragung geänderter Mitarbeiter (gebündelt)</field>
+        <field
+            name="name"
+        >DATEV: Übertragung geänderter Mitarbeiter (gebündelt)</field>
         <field name="model_id" ref="datev_connector_hr.model_hr_employee" />
         <field name="state">code</field>
         <field name="code">model._cron_datev_sync_dirty()</field>

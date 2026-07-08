@@ -7,14 +7,13 @@ class DatevPayrollLine(models.Model):
     _name = "datev.payroll.line"
     _description = "DATEV Lohnlauf-Zeile"
 
-    run_id = fields.Many2one(
-        "datev.payroll.run", required=True, ondelete="cascade", index=True
-    )
+    run_id = fields.Many2one("datev.payroll.run", required=True, ondelete="cascade", index=True)
     company_id = fields.Many2one(related="run_id.company_id", store=True)
     employee_id = fields.Many2one("hr.employee", string="Mitarbeiter")
     personnel_number = fields.Char(string="Personalnr.")
     salary_type_id = fields.Many2one(
-        "datev.salary.type", string="Lohnart",
+        "datev.salary.type",
+        string="Lohnart",
         domain="[('company_id', '=', company_id)]",
     )
     salary_type_code = fields.Char(string="Lohnart-Code")
@@ -24,13 +23,10 @@ class DatevPayrollLine(models.Model):
     cost_center = fields.Char(string="Kostenstelle")
     processing_key = fields.Char(
         string="Bearbeitungsschlüssel",
-        help="bs aus dem Import — wird derzeit NICHT an die API gesendet "
-             "(kein Feld im month-records-Schema).",
+        help="bs aus dem Import — wird derzeit NICHT an die API gesendet " "(kein Feld im month-records-Schema).",
     )
     payment_months = fields.Char(string="Zahlungsmonate", help="Für gross-payments, z. B. 1,2,…,12.")
-    source = fields.Selection(
-        [("imported", "Importiert"), ("manual", "Manuell")], default="manual"
-    )
+    source = fields.Selection([("imported", "Importiert"), ("manual", "Manuell")], default="manual")
     channel = fields.Selection(related="salary_type_id.channel", string="Kanal")
     error = fields.Char(string="Fehler", readonly=True)
 

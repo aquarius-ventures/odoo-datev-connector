@@ -20,7 +20,8 @@ def _country_of_birth_code(iso_alpha2):
     if _COUNTRY_OF_BIRTH_MAPPING is None:
         path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
-            "data", "datev_country_of_birth_mapping.json",
+            "data",
+            "datev_country_of_birth_mapping.json",
         )
         try:
             with open(path, encoding="utf-8") as fh:
@@ -44,7 +45,8 @@ def _address_country_code(iso_alpha2):
     if _ADDRESS_COUNTRY_ACCEPT is None:
         path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
-            "data", "datev_address_country_accept_list.json",
+            "data",
+            "datev_address_country_accept_list.json",
         )
         try:
             with open(path, encoding="utf-8") as fh:
@@ -54,6 +56,7 @@ def _address_country_code(iso_alpha2):
             _ADDRESS_COUNTRY_ACCEPT = set()
     code = (iso_alpha2 or "").upper()
     return code if code in _ADDRESS_COUNTRY_ACCEPT else None
+
 
 _DATEV_REQUIRED_FIELDS = {
     "birthday": "Geburtsdatum",
@@ -111,13 +114,13 @@ class HrEmployee(models.Model):
         string="In DATEV angelegt",
         groups="hr.group_hr_user",
         help="Intern: Gibt an, ob dieser Mitarbeiter bereits per POST in DATEV LODAS angelegt wurde. "
-             "Wird automatisch beim ersten erfolgreichen Transfer gesetzt.",
+        "Wird automatisch beim ersten erfolgreichen Transfer gesetzt.",
     )
     datev_sync_enabled = fields.Boolean(
         string="DATEV Cloud Sync aktiv",
         groups="hr.group_hr_user",
         help="Bei aktiver Synchronisation wird dieser Mitarbeiter nach jeder "
-             "Änderung an einem DATEV-relevanten Feld automatisch übertragen.",
+        "Änderung an einem DATEV-relevanten Feld automatisch übertragen.",
     )
     datev_last_sync = fields.Datetime(
         string="Letzte Synchronisation",
@@ -134,7 +137,7 @@ class HrEmployee(models.Model):
         copy=False,
         groups="hr.group_hr_user",
         help="Intern: Es gibt Änderungen, die noch nicht an DATEV übertragen "
-             "wurden. Ein Sammel-Cron überträgt gebündelt (Debounce).",
+        "wurden. Ein Sammel-Cron überträgt gebündelt (Debounce).",
     )
     datev_job_id = fields.Char(
         string="DATEV Job-ID",
@@ -148,8 +151,7 @@ class HrEmployee(models.Model):
         readonly=True,
         copy=False,
         groups="hr.group_hr_user",
-        help="fetch = Pflicht-Lesevorgang vor Anlage/Änderung; "
-             "push = eigentliche Übertragung.",
+        help="fetch = Pflicht-Lesevorgang vor Anlage/Änderung; " "push = eigentliche Übertragung.",
     )
     datev_job_state = fields.Selection(
         [("pending", "Pending"), ("succeeded", "Succeeded"), ("failed", "Failed")],
@@ -222,7 +224,7 @@ class HrEmployee(models.Model):
         default="1",
         groups="hr.group_hr_user",
         help="DATEV taxation.employment_type. 1 = erstes Dienstverhältnis (Hauptarbeitgeber), "
-             "2 = weiteres Dienstverhältnis (i. d. R. Steuerklasse VI).",
+        "2 = weiteres Dienstverhältnis (i. d. R. Steuerklasse VI).",
     )
     datev_flat_rate_tax = fields.Selection(
         [
@@ -241,7 +243,7 @@ class HrEmployee(models.Model):
         string="Betriebsnr. Krankenkasse",
         groups="hr.group_hr_user",
         help="8-stellige Betriebsnummer der Krankenkasse (z. B. 87880235). "
-             "Wird als company_number_of_health_insurer an DATEV übermittelt.",
+        "Wird als company_number_of_health_insurer an DATEV übermittelt.",
     )
     datev_health_insurance_type = fields.Selection(
         [("gkv", "GKV – Gesetzlich (Beitragsklasse 1)"), ("pkv", "PKV – Privat (Beitragsklasse 9)")],
@@ -293,8 +295,8 @@ class HrEmployee(models.Model):
         default=True,
         groups="hr.group_hr_user",
         help="Zusätzlicher Beitrag zur Pflegeversicherung für Kinderlose (ab 23 J.). "
-             "Aktiviert = Zuschlag wird berücksichtigt (DATEV-Feld "
-             "is_additional_contribution_..._childless_ignored = false).",
+        "Aktiviert = Zuschlag wird berücksichtigt (DATEV-Feld "
+        "is_additional_contribution_..._childless_ignored = false).",
     )
 
     # ── Beschäftigung & Vergütung ────────────────────────────────────────────
@@ -302,15 +304,14 @@ class HrEmployee(models.Model):
         string="Eintrittsdatum (DATEV)",
         groups="hr.group_hr_user",
         help="Beschäftigungsbeginn. Wird als employment_periods."
-             "date_of_commencement_of_employment übertragen. Das Austrittsdatum "
-             "wird – falls gesetzt – aus dem Standard-Feld 'Austrittsdatum' übernommen.",
+        "date_of_commencement_of_employment übertragen. Das Austrittsdatum "
+        "wird – falls gesetzt – aus dem Standard-Feld 'Austrittsdatum' übernommen.",
     )
     datev_weekly_working_hours = fields.Float(
         string="Wochenarbeitszeit",
         digits=(4, 2),
         groups="hr.group_hr_user",
-        help="Regelmäßige wöchentliche Arbeitszeit in Stunden (0–99). "
-             "DATEV activity.weekly_working_hours.",
+        help="Regelmäßige wöchentliche Arbeitszeit in Stunden (0–99). " "DATEV activity.weekly_working_hours.",
     )
     datev_employee_type = fields.Selection(
         [
@@ -345,14 +346,13 @@ class HrEmployee(models.Model):
         default="101",
         groups="hr.group_hr_user",
         help="SV-Personengruppenschlüssel. DATEV activity.employee_type. "
-             "101 = sozialversicherungspflichtig Beschäftigte (Standardfall).",
+        "101 = sozialversicherungspflichtig Beschäftigte (Standardfall).",
     )
     datev_vacation_days = fields.Float(
         string="Urlaubsanspruch (Tage/Jahr)",
         digits=(3, 1),
         groups="hr.group_hr_user",
-        help="Jahresurlaubsanspruch in Tagen (0–99,5). "
-             "DATEV vacation_entitlement.basic_vacation_entitlement.",
+        help="Jahresurlaubsanspruch in Tagen (0–99,5). " "DATEV vacation_entitlement.basic_vacation_entitlement.",
     )
     datev_payment_method = fields.Selection(
         [
@@ -370,38 +370,32 @@ class HrEmployee(models.Model):
 
     def write(self, vals):
         result = super().write(vals)
-        if not self.env.context.get("_datev_sync_in_progress") and (
-            _DATEV_SYNC_FIELDS & set(vals.keys())
-        ):
+        if not self.env.context.get("_datev_sync_in_progress") and (_DATEV_SYNC_FIELDS & set(vals.keys())):
             # Debounce: only mark as dirty — a collecting cron bundles several
             # rapid edits (and several employees) into ONE DATEV transfer
             # instead of firing a job per save.
             to_sync = self.filtered("datev_sync_enabled")
             if to_sync:
-                to_sync.with_context(_datev_sync_in_progress=True).write(
-                    {"datev_sync_dirty": True}
-                )
+                to_sync.with_context(_datev_sync_in_progress=True).write({"datev_sync_dirty": True})
         return result
 
     @api.model
     def _cron_datev_sync_dirty(self):
-        dirty = self.search([
-            ("datev_sync_dirty", "=", True),
-            ("datev_sync_enabled", "=", True),
-            # Don't start a new cycle while a job for this employee is running.
-            ("datev_job_state", "!=", "pending"),
-        ])
+        dirty = self.search(
+            [
+                ("datev_sync_dirty", "=", True),
+                ("datev_sync_enabled", "=", True),
+                # Don't start a new cycle while a job for this employee is running.
+                ("datev_job_state", "!=", "pending"),
+            ]
+        )
         if dirty:
             dirty.with_context(_datev_sync_in_progress=True)._action_datev_sync()
 
     def datev_get_missing_required_fields(self):
         """Return list of human-readable labels for unfilled required fields."""
         self.ensure_one()
-        return [
-            label
-            for fname, label in _DATEV_REQUIRED_FIELDS.items()
-            if not getattr(self, fname, False)
-        ]
+        return [label for fname, label in _DATEV_REQUIRED_FIELDS.items() if not getattr(self, fname, False)]
 
     def _action_datev_sync(self):
         """Start a DATEV sync cycle for these employees.
@@ -421,12 +415,15 @@ class HrEmployee(models.Model):
                 emp.write({"datev_sync_error": error, "datev_sync_dirty": False})
                 _logger.warning(
                     "DATEV sync skipped for employee %s (%d): %s",
-                    emp.name, emp.id, error,
+                    emp.name,
+                    emp.id,
+                    error,
                 )
                 continue
             ready |= emp
 
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
+
         Settings = self.env["res.config.settings"]
 
         for company in ready.mapped(lambda e: e.company_id or self.env.company):
@@ -443,19 +440,23 @@ class HrEmployee(models.Model):
                 emps.write({"datev_sync_error": str(exc)[:1000]})
                 _logger.error("DATEV hr:exchange sync start failed (%s): %s", company.name, exc)
                 continue
-            emps.write({
-                "datev_sync_dirty": False,
-                "datev_sync_error": False,
-                "datev_job_id": job.get("id"),
-                "datev_job_phase": "fetch",
-                "datev_job_state": "pending",
-                "datev_job_error": False,
-                "datev_job_created_at": fields.Datetime.now(),
-                "datev_job_last_poll": False,
-            })
+            emps.write(
+                {
+                    "datev_sync_dirty": False,
+                    "datev_sync_error": False,
+                    "datev_job_id": job.get("id"),
+                    "datev_job_phase": "fetch",
+                    "datev_job_state": "pending",
+                    "datev_job_error": False,
+                    "datev_job_created_at": fields.Datetime.now(),
+                    "datev_job_last_poll": False,
+                }
+            )
             _logger.info(
                 "DATEV hr:exchange fetch job %s started for %d employee(s) of %s",
-                job.get("id"), len(emps), company.name,
+                job.get("id"),
+                len(emps),
+                company.name,
             )
 
     def _build_hr_exchange_payload(self):
@@ -473,8 +474,24 @@ class HrEmployee(models.Model):
 
         # ── Church tax denomination (only values the DATEV API accepts) ──────
         _VALID_DENOMINATION = {
-            "ak", "ev", "fa", "fb", "fg", "fm", "fr", "fs",
-            "ib", "ih", "il", "is", "iw", "jd", "jh", "lt", "rf", "rk",
+            "ak",
+            "ev",
+            "fa",
+            "fb",
+            "fg",
+            "fm",
+            "fr",
+            "fs",
+            "ib",
+            "ih",
+            "il",
+            "is",
+            "iw",
+            "jd",
+            "jh",
+            "lt",
+            "rf",
+            "rk",
         }
         denomination = self.datev_church_tax if self.datev_church_tax in _VALID_DENOMINATION else None
 
@@ -544,8 +561,7 @@ class HrEmployee(models.Model):
             "contribution_class_pension_insurance": int(self.datev_si_pension or "1"),
             "contribution_class_unemployment_insurance": int(self.datev_si_unemployment or "1"),
             # Odoo field is "Zuschlag berücksichtigen"; DATEV field is "...ignored" → invert.
-            "is_additional_contribution_to_nursing_insurance_for_childless_ignored":
-                not self.datev_si_childless_surcharge,
+            "is_additional_contribution_to_nursing_insurance_for_childless_ignored": not self.datev_si_childless_surcharge,
         }
         if self.datev_health_insurance_name:
             social_insurance["company_number_of_health_insurer"] = self.datev_health_insurance_name[:8]
@@ -559,9 +575,7 @@ class HrEmployee(models.Model):
             activity["weekly_working_hours"] = self.datev_weekly_working_hours
         if self.datev_employee_type:
             activity["employee_type"] = self.datev_employee_type
-        occupational_title = self._format_occupational_title(
-            self.job_id.name if self.job_id else ""
-        )
+        occupational_title = self._format_occupational_title(self.job_id.name if self.job_id else "")
         if occupational_title:
             activity["occupational_title"] = occupational_title
         if activity:
@@ -570,12 +584,10 @@ class HrEmployee(models.Model):
         # ── Employment period (commencement / termination) ──────────────────────
         if self.datev_employment_start:
             period = {
-                "date_of_commencement_of_employment":
-                    self.datev_employment_start.strftime("%Y-%m-%d"),
+                "date_of_commencement_of_employment": self.datev_employment_start.strftime("%Y-%m-%d"),
             }
             if self.departure_date:
-                period["date_of_termination_of_employment"] = \
-                    self.departure_date.strftime("%Y-%m-%d")
+                period["date_of_termination_of_employment"] = self.departure_date.strftime("%Y-%m-%d")
             payload["employment_periods"] = [period]
 
         # ── Payment method & vacation entitlement ───────────────────────────────
@@ -604,7 +616,9 @@ class HrEmployee(models.Model):
             else:
                 _logger.warning(
                     "DATEV: address skipped for %s — country %s (%s) not in DATEV accept list.",
-                    self.name, self.private_country_id.name, self.private_country_id.code,
+                    self.name,
+                    self.private_country_id.name,
+                    self.private_country_id.code,
                 )
         # DATEV Address schema requires both country and postal_code.
         if addr.get("country") and addr.get("postal_code"):
@@ -646,8 +660,7 @@ class HrEmployee(models.Model):
         if not polled:
             # DATEV poll cadence: at most one status request per minute per job.
             raise UserError(
-                "DATEV erlaubt höchstens eine Statusabfrage pro Minute. "
-                "Bitte in Kürze erneut versuchen."
+                "DATEV erlaubt höchstens eine Statusabfrage pro Minute. " "Bitte in Kürze erneut versuchen."
             )
         return {
             "type": "ir.actions.client",
@@ -673,8 +686,12 @@ class HrEmployee(models.Model):
         for e in errors:
             if isinstance(e, dict):
                 msg = (
-                    e.get("client_message") or e.get("message") or e.get("technical_message")
-                    or e.get("detail") or e.get("description") or ""
+                    e.get("client_message")
+                    or e.get("message")
+                    or e.get("technical_message")
+                    or e.get("detail")
+                    or e.get("description")
+                    or ""
                 )
                 code = e.get("code") or e.get("id") or e.get("error_code") or ""
                 parts.append(f"[{code}] {msg}".strip() if code else (msg or str(e)))
@@ -694,6 +711,7 @@ class HrEmployee(models.Model):
         cadence and drive the fetch→push state machine. Returns the number of
         jobs actually polled."""
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
+
         Settings = self.env["res.config.settings"]
         now = fields.Datetime.now()
 
@@ -718,11 +736,13 @@ class HrEmployee(models.Model):
             if last_poll and now - last_poll < self._POLL_INTERVAL:
                 continue
             if created_at and now - created_at > self._POLL_TIMEOUT:
-                emps.write({
-                    "datev_job_state": "failed",
-                    "datev_job_error": "Zeitüberschreitung (15 min) — Status unbekannt, "
-                                       "bitte manuell in DATEV prüfen.",
-                })
+                emps.write(
+                    {
+                        "datev_job_state": "failed",
+                        "datev_job_error": "Zeitüberschreitung (15 min) — Status unbekannt, "
+                        "bitte manuell in DATEV prüfen.",
+                    }
+                )
                 _logger.error("DATEV hr:exchange job %s timed out after 15 min.", job_id)
                 continue
 
@@ -760,10 +780,12 @@ class HrEmployee(models.Model):
         try:
             result = service.hr_exchange_job_result(client_id, job_id, "employees")
         except Exception as exc:
-            emps.write({
-                "datev_job_state": "failed",
-                "datev_job_error": "Fetch-Ergebnis nicht abrufbar: %s" % str(exc)[:500],
-            })
+            emps.write(
+                {
+                    "datev_job_state": "failed",
+                    "datev_job_error": "Fetch-Ergebnis nicht abrufbar: %s" % str(exc)[:500],
+                }
+            )
             return
         entries = result.get("employees", result) if isinstance(result, dict) else result
         existing_numbers = set()
@@ -778,17 +800,22 @@ class HrEmployee(models.Model):
             try:
                 payload = emp._build_hr_exchange_payload()
             except Exception as exc:
-                emp.write({
-                    "datev_job_state": "failed",
-                    "datev_job_error": str(exc)[:1000],
-                })
+                emp.write(
+                    {
+                        "datev_job_state": "failed",
+                        "datev_job_error": str(exc)[:1000],
+                    }
+                )
                 continue
             exists = str(int(emp.datev_personnel_number or "0")) in existing_numbers
             if exists:
                 # Existence derived from the fetch result — not from a local flag.
                 try:
                     job = service.hr_exchange_put_employee(
-                        client_id, emp.datev_personnel_number, payload, reference_date,
+                        client_id,
+                        emp.datev_personnel_number,
+                        payload,
+                        reference_date,
                     )
                 except Exception as exc:
                     emp.write({"datev_job_state": "failed", "datev_job_error": str(exc)[:1000]})

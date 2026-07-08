@@ -46,6 +46,5 @@ class DatevApiLog(models.Model):
         cutoff = fields.Datetime.now() - timedelta(days=_LOG_RETENTION_DAYS)
         old = self.search([("request_ts", "<", cutoff)])
         if old:
-            _logger.info("DATEV API log vacuum: deleting %d entries older than %d days.",
-                         len(old), _LOG_RETENTION_DAYS)
+            _logger.info("DATEV API log vacuum: deleting %d entries older than %d days.", len(old), _LOG_RETENTION_DAYS)
             old.unlink()

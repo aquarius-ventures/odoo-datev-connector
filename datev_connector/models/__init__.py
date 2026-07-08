@@ -1,5 +1,1 @@
-from . import datev_api_log
-from . import datev_oauth_flow
-from . import datev_token
-from . import res_company
-from . import res_config_settings
+from . import datev_api_log, datev_oauth_flow, datev_token, res_company, res_config_settings

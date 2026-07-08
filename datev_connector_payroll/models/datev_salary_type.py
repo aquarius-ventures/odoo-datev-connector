@@ -44,13 +44,11 @@ class DatevSalaryType(models.Model):
         string="DATEV-Kanal",
         required=True,
         default="month_record",
-        help="Über welchen API-Kanal diese Lohnart übertragen wird. "
-             "Default aus der Kategorie, aber überschreibbar.",
+        help="Über welchen API-Kanal diese Lohnart übertragen wird. " "Default aus der Kategorie, aber überschreibbar.",
     )
     external_key = fields.Char(
         string="Externer Schlüssel",
-        help="Optionaler Alias, falls der Import einen anderen Schlüssel als die "
-             "DATEV-Lohnart nutzt.",
+        help="Optionaler Alias, falls der Import einen anderen Schlüssel als die " "DATEV-Lohnart nutzt.",
     )
     company_id = fields.Many2one(
         "res.company",

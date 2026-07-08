@@ -1,10 +1,7 @@
-from unittest.mock import patch
-
 from odoo.tests.common import HttpCase
 
 
 class TestDatevOAuthController(HttpCase):
-
     def test_callback_without_code_redirects(self):
         resp = self.url_open("/web/datev/oauth/callback", timeout=10)
         self.assertIn(resp.status_code, [200, 302, 303])

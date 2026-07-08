@@ -11,13 +11,20 @@
                     </group>
 
                     <group string="Ausgewählte Mitarbeiter">
-                        <field name="employee_ids" nolabel="1" readonly="1"
-                               widget="many2many_tags" />
+                        <field
+                            name="employee_ids"
+                            nolabel="1"
+                            readonly="1"
+                            widget="many2many_tags"
+                        />
                     </group>
 
                     <!-- Warning: employees with missing required fields -->
-                    <div invisible="not has_missing"
-                         class="alert alert-warning mt-2" role="alert">
+                    <div
+                        invisible="not has_missing"
+                        class="alert alert-warning mt-2"
+                        role="alert"
+                    >
                         <strong>Achtung: Fehlende Pflichtfelder</strong>
                         <p class="mb-2 mt-1">
                             Die folgenden Mitarbeiter können nicht übertragen werden,
@@ -29,15 +36,22 @@
                     <field name="has_missing" invisible="1" />
                 </sheet>
                 <footer>
-                    <button string="Ausführen" type="object"
-                            name="action_execute" class="btn-primary" />
+                    <button
+                        string="Ausführen"
+                        type="object"
+                        name="action_execute"
+                        class="btn-primary"
+                    />
                     <button string="Abbrechen" special="cancel" />
                 </footer>
             </form>
         </field>
     </record>
 
-    <record id="action_datev_employee_sync_wizard" model="ir.actions.act_window">
+    <record
+        id="action_datev_employee_sync_wizard"
+        model="ir.actions.act_window"
+    >
         <field name="name">DATEV-Cloud Einstellungen</field>
         <field name="res_model">datev.employee.sync.wizard</field>
         <field name="view_mode">form</field>

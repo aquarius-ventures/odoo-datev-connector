@@ -6,7 +6,12 @@
         <field name="arch" type="xml">
             <tree string="DATEV Tokens" create="false">
                 <field name="company_id" />
-                <field name="state" widget="badge" decoration-success="state == 'connected'" decoration-danger="state == 'disconnected'" />
+                <field
+                    name="state"
+                    widget="badge"
+                    decoration-success="state == 'connected'"
+                    decoration-danger="state == 'disconnected'"
+                />
                 <field name="token_expiry" />
                 <field name="refresh_token_expiry" />
                 <field name="issued_by_name" />
@@ -33,7 +38,12 @@
                     <group>
                         <group>
                             <field name="company_id" readonly="1" />
-                            <field name="state" widget="badge" decoration-success="state == 'connected'" decoration-danger="state == 'disconnected'" />
+                            <field
+                                name="state"
+                                widget="badge"
+                                decoration-success="state == 'connected'"
+                                decoration-danger="state == 'disconnected'"
+                            />
                         </group>
                         <group>
                             <field name="token_expiry" />
@@ -43,7 +53,10 @@
                         </group>
                     </group>
                     <div>
-                        <a href="https://apps.datev.de/tokrevui" target="_blank">
+                        <a
+                            href="https://apps.datev.de/tokrevui"
+                            target="_blank"
+                        >
                             Token in DATEV verwalten/widerrufen (Verbundene Anwendungen)
                         </a>
                     </div>

@@ -10,12 +10,8 @@ class DatevPayrollRun(models.Model):
     _order = "reference_date desc, id desc"
 
     name = fields.Char(compute="_compute_name", store=True)
-    company_id = fields.Many2one(
-        "res.company", required=True, default=lambda self: self.env.company
-    )
-    reference_date = fields.Char(
-        string="Abrechnungsmonat", required=True, help="Format yyyy-MM, z. B. 2026-01."
-    )
+    company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company)
+    reference_date = fields.Char(string="Abrechnungsmonat", required=True, help="Format yyyy-MM, z. B. 2026-01.")
     target_system = fields.Selection(
         [("lodas", "LODAS"), ("lug", "Lohn und Gehalt")],
         string="Abrechnungssystem",
@@ -39,7 +35,8 @@ class DatevPayrollRun(models.Model):
     job_id = fields.Char(readonly=True, copy=False)
     job_state = fields.Selection(
         [("pending", "Pending"), ("succeeded", "Succeeded"), ("failed", "Failed")],
-        readonly=True, copy=False,
+        readonly=True,
+        copy=False,
     )
     job_error = fields.Text(readonly=True, copy=False)
 
@@ -59,19 +56,18 @@ class DatevPayrollRun(models.Model):
         self.company_id.datev_require_target_system()
         self.line_ids._validate()
         if self.error_count:
-            raise UserError(
-                _("%d Zeile(n) haben Fehler. Bitte korrigieren, bevor du fortfährst.")
-                % self.error_count
-            )
+            raise UserError(_("%d Zeile(n) haben Fehler. Bitte korrigieren, bevor du fortfährst.") % self.error_count)
         self.state = "validated"
 
     def action_transfer(self):
         self.ensure_one()
         # P3: real transfer to DATEV (month-records / gross-payments / hourly-wages).
-        raise UserError(_(
-            "Der Transfer an DATEV ist noch nicht aktiv (Phase P3). "
-            "Er wird freigeschaltet, sobald ein Lohn-fähiger Mandant bereitsteht."
-        ))
+        raise UserError(
+            _(
+                "Der Transfer an DATEV ist noch nicht aktiv (Phase P3). "
+                "Er wird freigeschaltet, sobald ein Lohn-fähiger Mandant bereitsteht."
+            )
+        )
 
     def action_open_import(self):
         self.ensure_one()

@@ -8,8 +8,8 @@ class ResCompany(models.Model):
         string="DATEV Festschreibung",
         default=True,
         help="Header field 21 of exported EXTF files. Enabled (default) means "
-             "postings are fixated on import — the GoBD-compliant setting. "
-             "Only disable this in coordination with the tax advisor.",
+        "postings are fixated on import — the GoBD-compliant setting. "
+        "Only disable this in coordination with the tax advisor.",
     )
     datev_chart_of_accounts = fields.Selection(
         [("03", "SKR03"), ("04", "SKR04")],

@@ -5,7 +5,6 @@ from odoo.tests.common import TransactionCase
 
 
 class TestDatevApiService(TransactionCase):
-
     def setUp(self):
         super().setUp()
         self.config = {
@@ -69,11 +68,13 @@ class TestDatevApiService(TransactionCase):
 
     @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
     def test_exchange_code_calls_token_endpoint(self, mock_request):
-        mock_request.return_value = self._mock_response(json_data={
-            "access_token": "acc",
-            "refresh_token": "ref",
-            "expires_in": 3600,
-        })
+        mock_request.return_value = self._mock_response(
+            json_data={
+                "access_token": "acc",
+                "refresh_token": "ref",
+                "expires_in": 3600,
+            }
+        )
         service = self._make_service()
         result = service.exchange_code("authcode", "test-verifier")
         self.assertEqual(result["access_token"], "acc")
@@ -105,7 +106,8 @@ class TestDatevApiService(TransactionCase):
         service = self._make_service()
         before = self.env["datev.api.log"].search_count([])
         service._http(
-            "GET", "https://api.datev.de/test",
+            "GET",
+            "https://api.datev.de/test",
             headers={"Authorization": "Bearer SECRET-TOKEN", "Accept": "application/json"},
         )
         logs = self.env["datev.api.log"].search([], order="id desc", limit=1)
@@ -131,12 +133,15 @@ class TestDatevApiService(TransactionCase):
             },
         )
         from datetime import datetime, timedelta
-        self.env["datev.token"].create({
-            "company_id": self.env.company.id,
-            "access_token": "test-at",
-            "token_expiry": datetime.utcnow() + timedelta(hours=1),
-            "state": "connected",
-        })
+
+        self.env["datev.token"].create(
+            {
+                "company_id": self.env.company.id,
+                "access_token": "test-at",
+                "token_expiry": datetime.utcnow() + timedelta(hours=1),
+                "state": "connected",
+            }
+        )
         service = self._make_service()
         with self.assertRaises(UserError) as ctx:
             service._request("GET", "https://api.datev.de/test", extra_headers={})

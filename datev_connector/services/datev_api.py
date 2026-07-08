@@ -7,11 +7,10 @@ from datetime import datetime
 from typing import Any, Dict, Optional
 
 import requests
-from requests import Response
-
 from odoo import SUPERUSER_ID
 from odoo import api as odoo_api
 from odoo.exceptions import UserError
+from requests import Response
 
 _logger = logging.getLogger(__name__)
 
@@ -80,8 +79,19 @@ class DatevApiService:
     # HTTP choke point + technical log (DATEV MUST, P1.1)
     # ------------------------------------------------------------------
 
-    def _http(self, method: str, url: str, *, headers=None, params=None,
-              data=None, json=None, auth=None, timeout=60, log_body=False) -> Response:
+    def _http(
+        self,
+        method: str,
+        url: str,
+        *,
+        headers=None,
+        params=None,
+        data=None,
+        json=None,
+        auth=None,
+        timeout=60,
+        log_body=False,
+    ) -> Response:
         """Single choke point for ALL HTTP communication with the DATEV API
         gateway. Every request/response pair is written to datev.api.log.
         ``log_body=True`` stores the response body also for non-error responses
@@ -93,9 +103,14 @@ class DatevApiService:
             full_url = url
         try:
             resp = requests.request(
-                method, url,
-                headers=headers, params=params, data=data, json=json,
-                auth=auth, timeout=timeout,
+                method,
+                url,
+                headers=headers,
+                params=params,
+                data=data,
+                json=json,
+                auth=auth,
+                timeout=timeout,
             )
         except requests.RequestException as exc:
             self._log_api_call(method, full_url, headers, error=str(exc), request_ts=request_ts)
@@ -105,14 +120,19 @@ class DatevApiService:
         except Exception:
             logged_url = full_url
         self._log_api_call(
-            method, logged_url, headers,
-            resp=resp, request_ts=request_ts, response_ts=datetime.utcnow(),
+            method,
+            logged_url,
+            headers,
+            resp=resp,
+            request_ts=request_ts,
+            response_ts=datetime.utcnow(),
             log_body=log_body,
         )
         return resp
 
-    def _log_api_call(self, method, url, headers, resp=None, error=None,
-                      request_ts=None, response_ts=None, log_body=False):
+    def _log_api_call(
+        self, method, url, headers, resp=None, error=None, request_ts=None, response_ts=None, log_body=False
+    ):
         """Write one datev.api.log row in its own transaction so log entries
         survive a rollback of the business transaction. Never raises."""
         try:
@@ -129,13 +149,14 @@ class DatevApiService:
             }
             if resp is not None:
                 status_code = int(resp.status_code)
-                vals.update({
-                    "response_ts": response_ts or datetime.utcnow(),
-                    "status_code": status_code,
-                    "x_global_transaction_id":
-                        str(resp.headers.get("X-Global-Transaction-ID") or ""),
-                    "v_cap_request_id": str(resp.headers.get("V-Cap-Request-ID") or ""),
-                })
+                vals.update(
+                    {
+                        "response_ts": response_ts or datetime.utcnow(),
+                        "status_code": status_code,
+                        "x_global_transaction_id": str(resp.headers.get("X-Global-Transaction-ID") or ""),
+                        "v_cap_request_id": str(resp.headers.get("V-Cap-Request-ID") or ""),
+                    }
+                )
                 if log_body or status_code >= 400:
                     vals["response_body"] = str(resp.text)[:8000]
             if error:
@@ -252,6 +273,7 @@ class DatevApiService:
             return
         try:
             import json
+
             payload_b64 = id_token.split(".")[1]
             payload_b64 += "=" * (-len(payload_b64) % 4)
             claims = json.loads(base64.urlsafe_b64decode(payload_b64))
@@ -275,7 +297,8 @@ class DatevApiService:
         url = _OAUTH_BASE[self._env_key]["revoke"]
         try:
             resp = self._http(
-                "POST", url,
+                "POST",
+                url,
                 data={"token": token, "token_type_hint": token_type_hint},
                 auth=(self._client_id, self._client_secret),
                 timeout=30,
@@ -286,7 +309,9 @@ class DatevApiService:
         if not resp.ok:
             _logger.warning(
                 "DATEV revoke (%s) returned %s: %s",
-                token_type_hint, resp.status_code, resp.text[:200],
+                token_type_hint,
+                resp.status_code,
+                resp.text[:200],
             )
         return resp.ok
 
@@ -295,7 +320,8 @@ class DatevApiService:
         url = _OAUTH_BASE[self._env_key]["userinfo"]
         try:
             resp = self._http(
-                "GET", url,
+                "GET",
+                url,
                 headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
                 timeout=30,
             )
@@ -312,7 +338,8 @@ class DatevApiService:
         url = _OAUTH_BASE[self._env_key]["token"]
         try:
             resp = self._http(
-                "POST", url,
+                "POST",
+                url,
                 data=payload,
                 auth=(self._client_id, self._client_secret),
                 timeout=30,
@@ -322,9 +349,7 @@ class DatevApiService:
         if not resp.ok:
             detail = self._format_http_error(resp)
             _logger.error("DATEV token error %s: %s", resp.status_code, detail)
-            raise UserError(
-                f"DATEV token request failed ({resp.status_code}): {detail}"
-            )
+            raise UserError(f"DATEV token request failed ({resp.status_code}): {detail}")
         data = resp.json()
         granted_scope = data.get("scope", "<not returned by DATEV>")
         _logger.info("DATEV token granted — scope: %s", granted_scope)
@@ -335,9 +360,7 @@ class DatevApiService:
     # ------------------------------------------------------------------
 
     def _get_token(self) -> str:
-        token = self._env["datev.token"].search(
-            [("company_id", "=", self._company_id)], limit=1
-        )
+        token = self._env["datev.token"].search([("company_id", "=", self._company_id)], limit=1)
         if not token:
             raise UserError("DATEV: Not connected. Please authenticate first.")
         return token.get_valid_access_token()
@@ -357,7 +380,9 @@ class DatevApiService:
         resp = self._request("GET", url, params=params)
         return resp.json()
 
-    def post(self, path: str, json: Optional[Dict] = None, data: Any = None, headers: Optional[Dict] = None) -> Response:
+    def post(
+        self, path: str, json: Optional[Dict] = None, data: Any = None, headers: Optional[Dict] = None
+    ) -> Response:
         url = _API_BASE[self._env_key] + path
         return self._request("POST", url, json=json, data=data, extra_headers=headers)
 
@@ -373,9 +398,12 @@ class DatevApiService:
     ) -> Response:
         try:
             resp = self._http(
-                method, url,
+                method,
+                url,
                 headers=self._headers(extra_headers),
-                params=params, json=json, data=data,
+                params=params,
+                json=json,
+                data=data,
                 log_body=log_body,
             )
         except requests.RequestException as exc:
@@ -385,8 +413,7 @@ class DatevApiService:
             _logger.error("DATEV API %s %s → %s: %s", method, url, resp.status_code, detail)
             if resp.status_code == 401:
                 raise UserError(
-                    "DATEV: Anmeldung ungültig oder abgelaufen — bitte neu mit "
-                    "DATEV verbinden. (%s)" % detail
+                    "DATEV: Anmeldung ungültig oder abgelaufen — bitte neu mit " "DATEV verbinden. (%s)" % detail
                 )
             raise UserError(f"DATEV API error {resp.status_code}: {detail}")
         return resp
@@ -400,7 +427,8 @@ class DatevApiService:
         """
         try:
             resp = self._http(
-                "GET", job_url,
+                "GET",
+                job_url,
                 headers={
                     "Authorization": f"Bearer {self._get_token()}",
                     "X-DATEV-Client-Id": self._client_id,
@@ -418,8 +446,8 @@ class DatevApiService:
             # A 404 on a known job URL is unusual — flag it in the log, but the
             # poll-timeout in the caller prevents endless pending states.
             _logger.warning(
-                "DATEV EXTF job status 404 for %s — treated as pending "
-                "(Auffälligkeit, siehe datev.api.log).", job_url,
+                "DATEV EXTF job status 404 for %s — treated as pending " "(Auffälligkeit, siehe datev.api.log).",
+                job_url,
             )
             return {"_result": "pending"}
         if resp.status_code == 202:
@@ -448,10 +476,7 @@ class DatevApiService:
             detail = validation.get("detail", "")
             affected = validation.get("affected_elements") or []
             if affected:
-                error_strs = [
-                    f"{title}: {e.get('name', '')} – {e.get('reason', '')}"
-                    for e in affected
-                ]
+                error_strs = [f"{title}: {e.get('name', '')} – {e.get('reason', '')}" for e in affected]
             elif title or detail:
                 error_strs = [f"{title}: {detail}".strip(": ")]
 
@@ -474,19 +499,20 @@ class DatevApiService:
         resp = self._request("GET", url, extra_headers={"X-DATEV-Client-Id": self._client_id})
         return resp.json()
 
-    def hr_exchange_create_fetch_job(self, client_id: str, reference_date: str,
-                                     resource_name: str = "employees") -> dict:
+    def hr_exchange_create_fetch_job(
+        self, client_id: str, reference_date: str, resource_name: str = "employees"
+    ) -> dict:
         """Start an async read job (MUST: complete read before create/modify)."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs"
         resp = self._request(
-            "POST", url,
+            "POST",
+            url,
             json={"resource_name": resource_name, "reference_date": reference_date},
             extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
         )
         return resp.json()
 
-    def hr_exchange_job_result(self, client_id: str, job_uuid: str,
-                               resource: str = "employees") -> dict:
+    def hr_exchange_job_result(self, client_id: str, job_uuid: str, resource: str = "employees") -> dict:
         """Fetch the result document of a finished job (MUST after every
         creation/modification: verify data persistence, evaluate errors[])."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}/result/{resource}"
@@ -497,18 +523,22 @@ class DatevApiService:
         """Create new employees in DATEV LODAS (async — returns 202 job)."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/employees"
         resp = self._request(
-            "POST", url,
+            "POST",
+            url,
             params={"reference-date": reference_date},
             json=employees,
             extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
         )
         return resp.json()
 
-    def hr_exchange_put_employee(self, client_id: str, personnel_number: str, employee: dict, reference_date: str) -> dict:
+    def hr_exchange_put_employee(
+        self, client_id: str, personnel_number: str, employee: dict, reference_date: str
+    ) -> dict:
         """Update an existing employee in DATEV LODAS (async — returns 202 job)."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/employees/{personnel_number}"
         resp = self._request(
-            "PUT", url,
+            "PUT",
+            url,
             params={"reference-date": reference_date},
             json=employee,
             extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
@@ -519,7 +549,8 @@ class DatevApiService:
         """Poll the state of a hr:exchange async job."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}"
         resp = self._request(
-            "GET", url,
+            "GET",
+            url,
             extra_headers={"X-DATEV-Client-Id": self._client_id},
             log_body=True,  # status query: body must be logged
         )
@@ -534,6 +565,7 @@ class DatevApiService:
         url = _EXTF_API_BASE[self._env_key] + f"/clients/{client_id}/extf-files/import"
         if not reference_id:
             import uuid
+
             reference_id = str(uuid.uuid4())
         headers = {
             "Authorization": f"Bearer {self._get_token()}",
@@ -547,7 +579,10 @@ class DatevApiService:
         }
         _logger.info(
             "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes",
-            url, filename, reference_id, len(csv_bytes),
+            url,
+            filename,
+            reference_id,
+            len(csv_bytes),
         )
         try:
             resp = self._http("POST", url, headers=headers, data=csv_bytes, timeout=60)
@@ -567,7 +602,8 @@ class DatevApiService:
         """List clients the token may access (paged, max 100 per page)."""
         url = _ACCT_CLIENTS_BASE[self._env_key] + "/clients"
         resp = self._request(
-            "GET", url,
+            "GET",
+            url,
             params={"top": top, "skip": skip},
             extra_headers={"X-DATEV-Client-Id": self._client_id},
             log_body=True,
@@ -582,7 +618,8 @@ class DatevApiService:
         transfer): GET /clients/{consultant}-{client} incl. its services."""
         url = _ACCT_CLIENTS_BASE[self._env_key] + f"/clients/{client_id}"
         resp = self._request(
-            "GET", url,
+            "GET",
+            url,
             extra_headers={"X-DATEV-Client-Id": self._client_id},
             log_body=True,
         )

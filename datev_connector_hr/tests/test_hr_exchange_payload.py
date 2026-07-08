@@ -43,15 +43,9 @@ class TestHrExchangePayload(TransactionCase):
         self.assertNotIn("first_name", payload)
 
     def test_gender_mapping(self):
-        self.assertEqual(
-            self._make_emp(gender="male")._build_hr_exchange_payload()["personal_data"]["sex"], "M"
-        )
-        self.assertEqual(
-            self._make_emp(gender="female")._build_hr_exchange_payload()["personal_data"]["sex"], "W"
-        )
-        self.assertEqual(
-            self._make_emp(gender="other")._build_hr_exchange_payload()["personal_data"]["sex"], "D"
-        )
+        self.assertEqual(self._make_emp(gender="male")._build_hr_exchange_payload()["personal_data"]["sex"], "M")
+        self.assertEqual(self._make_emp(gender="female")._build_hr_exchange_payload()["personal_data"]["sex"], "W")
+        self.assertEqual(self._make_emp(gender="other")._build_hr_exchange_payload()["personal_data"]["sex"], "D")
 
     # ── Personnel number validation ──────────────────────────────────────────
     def test_invalid_personnel_number_raises(self):
@@ -87,8 +81,11 @@ class TestHrExchangePayload(TransactionCase):
 
     def test_si_overrides_are_int(self):
         emp = self._make_emp(
-            datev_si_nursing="2", datev_si_pension="3", datev_si_unemployment="2",
-            datev_employment_type="2", datev_flat_rate_tax="2",
+            datev_si_nursing="2",
+            datev_si_pension="3",
+            datev_si_unemployment="2",
+            datev_employment_type="2",
+            datev_flat_rate_tax="2",
         )
         payload = emp._build_hr_exchange_payload()
         si = payload["social_insurance"]
@@ -172,11 +169,13 @@ class TestHrExchangePayload(TransactionCase):
     def test_iban_and_bic(self):
         bank = self.env["res.bank"].create({"name": "Commerzbank", "bic": "COBADEFF760"})
         partner = self.env["res.partner"].create({"name": "EE Bankinhaber"})
-        acc = self.env["res.partner.bank"].create({
-            "acc_number": "DE94 7604 0061 0524 3712 00",
-            "partner_id": partner.id,
-            "bank_id": bank.id,
-        })
+        acc = self.env["res.partner.bank"].create(
+            {
+                "acc_number": "DE94 7604 0061 0524 3712 00",
+                "partner_id": partner.id,
+                "bank_id": bank.id,
+            }
+        )
         emp = self._make_emp()
         emp.sudo().write({"bank_account_id": acc.id})
         account = emp._build_hr_exchange_payload()["account"]

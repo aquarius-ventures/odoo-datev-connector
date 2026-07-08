@@ -11,17 +11,14 @@ class DatevPayrollImportWizard(models.TransientModel):
     _name = "datev.payroll.import.wizard"
     _description = "DATEV Lohndaten-Import (JSON / CSV)"
 
-    company_id = fields.Many2one(
-        "res.company", required=True, default=lambda self: self.env.company
-    )
+    company_id = fields.Many2one("res.company", required=True, default=lambda self: self.env.company)
     run_id = fields.Many2one(
         "datev.payroll.run",
         help="Wenn gesetzt, werden die Zeilen an diesen Lauf angehängt; sonst neuer Lauf.",
     )
     reference_date = fields.Char(
         string="Abrechnungsmonat",
-        help="Format yyyy-MM. Für CSV-Import erforderlich; bei JSON optional "
-             "(überschreibt den Wert aus der Datei).",
+        help="Format yyyy-MM. Für CSV-Import erforderlich; bei JSON optional " "(überschreibt den Wert aus der Datei).",
     )
     data_file = fields.Binary(string="Datei (JSON oder CSV)", required=True)
     filename = fields.Char()
@@ -45,8 +42,7 @@ class DatevPayrollImportWizard(models.TransientModel):
         self.ensure_one()
         raw = base64.b64decode(self.data_file)
         is_csv = (self.filename or "").lower().endswith(".csv") or (
-            not (self.filename or "").lower().endswith(".json")
-            and not raw.lstrip().startswith(b"{")
+            not (self.filename or "").lower().endswith(".json") and not raw.lstrip().startswith(b"{")
         )
         if is_csv:
             rows, ref_date = self._read_csv(raw)
@@ -57,11 +53,13 @@ class DatevPayrollImportWizard(models.TransientModel):
 
         run = self.run_id
         if not run:
-            run = self.env["datev.payroll.run"].create({
-                "company_id": self.company_id.id,
-                "reference_date": ref_date,
-                "target_system": self.company_id.datev_target_system,
-            })
+            run = self.env["datev.payroll.run"].create(
+                {
+                    "company_id": self.company_id.id,
+                    "reference_date": ref_date,
+                    "target_system": self.company_id.datev_target_system,
+                }
+            )
 
         if not rows:
             raise UserError(_("Keine Zeilen in der Datei gefunden."))
@@ -87,16 +85,18 @@ class DatevPayrollImportWizard(models.TransientModel):
         for emp in data.get("employees", []):
             pnr = emp.get("personnel_number")
             for ln in emp.get("lines", []):
-                rows.append({
-                    "personnel_number": pnr,
-                    "salary_type": ln.get("salary_type"),
-                    "value": ln.get("value"),
-                    "factor": ln.get("factor"),
-                    "amount": ln.get("amount"),
-                    "cost_center": ln.get("cost_center"),
-                    "processing_key": ln.get("processing_key"),
-                    "payment_months": ln.get("payment_months"),
-                })
+                rows.append(
+                    {
+                        "personnel_number": pnr,
+                        "salary_type": ln.get("salary_type"),
+                        "value": ln.get("value"),
+                        "factor": ln.get("factor"),
+                        "amount": ln.get("amount"),
+                        "cost_center": ln.get("cost_center"),
+                        "processing_key": ln.get("processing_key"),
+                        "payment_months": ln.get("payment_months"),
+                    }
+                )
         return rows, data.get("reference_date")
 
     def _read_csv(self, raw):
@@ -107,16 +107,18 @@ class DatevPayrollImportWizard(models.TransientModel):
         for r in reader:
             if not (r.get("employee_no") or r.get("loan_type")):
                 continue
-            rows.append({
-                "personnel_number": r.get("employee_no"),
-                "salary_type": r.get("loan_type"),
-                "value": r.get("factor"),      # CSV 'factor' → value
-                "factor": r.get("amount"),     # CSV 'amount' → differing_factor
-                "amount": None,
-                "cost_center": r.get("cost_center"),
-                "processing_key": r.get("bs"),
-                "payment_months": None,
-            })
+            rows.append(
+                {
+                    "personnel_number": r.get("employee_no"),
+                    "salary_type": r.get("loan_type"),
+                    "value": r.get("factor"),  # CSV 'factor' → value
+                    "factor": r.get("amount"),  # CSV 'amount' → differing_factor
+                    "amount": None,
+                    "cost_center": r.get("cost_center"),
+                    "processing_key": r.get("bs"),
+                    "payment_months": None,
+                }
+            )
         return rows, None
 
     # ------------------------------------------------------------------
@@ -128,19 +130,27 @@ class DatevPayrollImportWizard(models.TransientModel):
         def _emp(pnr):
             key = str(pnr)
             if key not in emp_cache:
-                emp_cache[key] = Employee.search([
-                    ("datev_personnel_number", "=", key),
-                    ("company_id", "in", [run.company_id.id, False]),
-                ], limit=1)
+                emp_cache[key] = Employee.search(
+                    [
+                        ("datev_personnel_number", "=", key),
+                        ("company_id", "in", [run.company_id.id, False]),
+                    ],
+                    limit=1,
+                )
             return emp_cache[key]
 
         def _st(code):
             key = str(code)
             if key not in st_cache:
-                st_cache[key] = SalaryType.search([
-                    ("company_id", "=", run.company_id.id),
-                    "|", ("code", "=", key), ("external_key", "=", key),
-                ], limit=1)
+                st_cache[key] = SalaryType.search(
+                    [
+                        ("company_id", "=", run.company_id.id),
+                        "|",
+                        ("code", "=", key),
+                        ("external_key", "=", key),
+                    ],
+                    limit=1,
+                )
             return st_cache[key]
 
         commands = []
@@ -150,17 +160,23 @@ class DatevPayrollImportWizard(models.TransientModel):
             emp = _emp(pnr) if pnr is not None and str(pnr) != "" else Employee
             st = _st(code) if code is not None and str(code) != "" else SalaryType
             pk = row.get("processing_key")
-            commands.append((0, 0, {
-                "personnel_number": str(pnr) if pnr not in (None, "") else False,
-                "employee_id": emp.id if emp else False,
-                "salary_type_code": str(code) if code not in (None, "") else False,
-                "salary_type_id": st.id if st else False,
-                "value": self._parse_number(row.get("value")),
-                "factor": self._parse_number(row.get("factor")),
-                "amount": self._parse_number(row.get("amount")),
-                "cost_center": row.get("cost_center") or False,
-                "processing_key": str(pk) if pk not in (None, "") else False,
-                "payment_months": row.get("payment_months") or False,
-                "source": "imported",
-            }))
+            commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "personnel_number": str(pnr) if pnr not in (None, "") else False,
+                        "employee_id": emp.id if emp else False,
+                        "salary_type_code": str(code) if code not in (None, "") else False,
+                        "salary_type_id": st.id if st else False,
+                        "value": self._parse_number(row.get("value")),
+                        "factor": self._parse_number(row.get("factor")),
+                        "amount": self._parse_number(row.get("amount")),
+                        "cost_center": row.get("cost_center") or False,
+                        "processing_key": str(pk) if pk not in (None, "") else False,
+                        "payment_months": row.get("payment_months") or False,
+                        "source": "imported",
+                    },
+                )
+            )
         return commands

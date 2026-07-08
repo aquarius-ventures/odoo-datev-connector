@@ -106,9 +106,9 @@ class ExtfGenerator:
     # "Booking batch" format description.
     _TEXT_COLUMNS = frozenset(
         [2, 3, 6, 9, 11, 12, 14, 16, 20]
-        + list(range(21, 39))            # Beleginfo 1-8, KOST1, KOST2
+        + list(range(21, 39))  # Beleginfo 1-8, KOST1, KOST2
         + [40, 42]
-        + list(range(48, 88))            # Zusatzinformation 1-20
+        + list(range(48, 88))  # Zusatzinformation 1-20
         + [91, 95, 96, 98, 102, 103, 105, 107, 109, 110, 112, 118, 120, 121, 123]
     )
 
@@ -170,8 +170,7 @@ class ExtfGenerator:
         if move.currency_id and move.currency_id != company_currency:
             raise UserError(
                 "DATEV export: journal entry %s is in %s. Foreign-currency export "
-                "(Kurs/Basis-Umsatz) is not supported — please exclude this entry."
-                % (move.name, move.currency_id.name)
+                "(Kurs/Basis-Umsatz) is not supported — please exclude this entry." % (move.name, move.currency_id.name)
             )
 
     # ------------------------------------------------------------------
@@ -179,13 +178,9 @@ class ExtfGenerator:
     # ------------------------------------------------------------------
 
     def _build_mapping_caches(self):
-        mappings = self._env["datev.account.mapping"].search(
-            [("company_id", "=", self._company.id)]
-        )
+        mappings = self._env["datev.account.mapping"].search([("company_id", "=", self._company.id)])
         self._mapping_cache = {m.account_id.id: m.datev_account_number for m in mappings}
-        tax_mappings = self._env["datev.tax.mapping"].search(
-            [("company_id", "=", self._company.id)]
-        )
+        tax_mappings = self._env["datev.tax.mapping"].search([("company_id", "=", self._company.id)])
         self._bu_key_cache = {m.tax_id.id: m.datev_bu_key for m in tax_mappings}
 
     def _resolve_account(self, account) -> str:
@@ -193,9 +188,7 @@ class ExtfGenerator:
         if not number:
             # Fall back to the Odoo account code stripped of non-digits
             number = "".join(filter(str.isdigit, account.code)) or account.code
-            _logger.debug(
-                "No DATEV mapping for account %s – using code %s", account.code, number
-            )
+            _logger.debug("No DATEV mapping for account %s – using code %s", account.code, number)
         return number
 
     # ------------------------------------------------------------------
@@ -209,7 +202,8 @@ class ExtfGenerator:
         now = datetime.now()
         created_at = now.strftime("%Y%m%d%H%M%S") + "%03d" % (now.microsecond // 1000)
         designation = self._designation or "Odoo %s-%s" % (
-            self._date_from.strftime("%d.%m."), self._date_to.strftime("%d.%m.%Y"),
+            self._date_from.strftime("%d.%m."),
+            self._date_to.strftime("%d.%m.%Y"),
         )
         # Bezeichnung: max 30 chars, allowed [\w.-/ ]
         designation = re.sub(r"[^\w.\-/ ]", " ", designation)[:30]
@@ -220,37 +214,37 @@ class ExtfGenerator:
             return '"%s"' % s
 
         fields = [
-            q("EXTF"),                                    # 1  Kennzeichen
-            str(_EXTF_VERSION),                           # 2  Versionsnummer
-            str(_FORMAT_TYPE),                            # 3  Formatkategorie
-            q(_FORMAT_NAME),                              # 4  Formatname
-            str(_FORMAT_VERSION),                         # 5  Formatversion
-            created_at,                                   # 6  Erzeugt am (YYYYMMDDHHMMSSFFF)
-            "",                                           # 7  Importiert (set by DATEV)
-            q("OO"),                                      # 8  Herkunft (2-char origin mark)
-            q(_CREATED_BY_APP[:25]),                      # 9  Exportiert von
-            q(""),                                        # 10 Importiert von
-            consultant_number,                            # 11 Beraternummer
-            client_number,                                # 12 Mandantennummer
-            fy_start.strftime("%Y%m%d"),                  # 13 WJ-Beginn
+            q("EXTF"),  # 1  Kennzeichen
+            str(_EXTF_VERSION),  # 2  Versionsnummer
+            str(_FORMAT_TYPE),  # 3  Formatkategorie
+            q(_FORMAT_NAME),  # 4  Formatname
+            str(_FORMAT_VERSION),  # 5  Formatversion
+            created_at,  # 6  Erzeugt am (YYYYMMDDHHMMSSFFF)
+            "",  # 7  Importiert (set by DATEV)
+            q("OO"),  # 8  Herkunft (2-char origin mark)
+            q(_CREATED_BY_APP[:25]),  # 9  Exportiert von
+            q(""),  # 10 Importiert von
+            consultant_number,  # 11 Beraternummer
+            client_number,  # 12 Mandantennummer
+            fy_start.strftime("%Y%m%d"),  # 13 WJ-Beginn
             self._company.datev_account_number_length or "4",  # 14 Sachkontenlänge
-            self._date_from.strftime("%Y%m%d"),           # 15 Datum von
-            self._date_to.strftime("%Y%m%d"),             # 16 Datum bis
-            q(designation),                               # 17 Bezeichnung
-            q(""),                                        # 18 Diktatkürzel
-            "1",                                          # 19 Buchungstyp (1 = Fibu)
-            "0",                                          # 20 Rechnungslegungszweck
-            festschreibung,                               # 21 Festschreibung
-            q("EUR"),                                     # 22 WKZ
-            "",                                           # 23 Reserviert
-            q(""),                                        # 24 Derivatskennzeichen
-            "",                                           # 25 Reserviert
-            "",                                           # 26 Reserviert
-            q(chart),                                     # 27 Sachkontenrahmen
-            "",                                           # 28 ID der Branchenlösung
-            "",                                           # 29 Reserviert
-            q(""),                                        # 30 Reserviert
-            q(""),                                        # 31 Anwendungsinformation
+            self._date_from.strftime("%Y%m%d"),  # 15 Datum von
+            self._date_to.strftime("%Y%m%d"),  # 16 Datum bis
+            q(designation),  # 17 Bezeichnung
+            q(""),  # 18 Diktatkürzel
+            "1",  # 19 Buchungstyp (1 = Fibu)
+            "0",  # 20 Rechnungslegungszweck
+            festschreibung,  # 21 Festschreibung
+            q("EUR"),  # 22 WKZ
+            "",  # 23 Reserviert
+            q(""),  # 24 Derivatskennzeichen
+            "",  # 25 Reserviert
+            "",  # 26 Reserviert
+            q(chart),  # 27 Sachkontenrahmen
+            "",  # 28 ID der Branchenlösung
+            "",  # 29 Reserviert
+            q(""),  # 30 Reserviert
+            q(""),  # 31 Anwendungsinformation
         ]
         return ";".join(fields)
 
@@ -285,7 +279,8 @@ class ExtfGenerator:
     def _move_rows(self, move) -> List[List[str]]:
         currency = self._company.currency_id
         lines = [
-            line for line in move.line_ids
+            line
+            for line in move.line_ids
             if line.account_id
             and line.display_type not in ("line_section", "line_note")
             and not currency.is_zero(line.balance)
@@ -299,9 +294,11 @@ class ExtfGenerator:
 
         # Variant B requires a BU key for every posted tax and at most one tax
         # per base line; otherwise fall back to variant A (see module docstring).
-        gross_mode = bool(tax_lines) and all(
-            t.tax_line_id.id in self._bu_key_cache for t in tax_lines
-        ) and all(len(line.tax_ids) <= 1 for line in base_lines)
+        gross_mode = (
+            bool(tax_lines)
+            and all(t.tax_line_id.id in self._bu_key_cache for t in tax_lines)
+            and all(len(line.tax_ids) <= 1 for line in base_lines)
+        )
 
         extra = None
         if gross_mode:
@@ -320,7 +317,8 @@ class ExtfGenerator:
                 _logger.info(
                     "DATEV export: move %s exported with separate tax rows "
                     "(variant A) — incomplete BU-Schlüssel mapping or "
-                    "unallocatable tax.", move.name,
+                    "unallocatable tax.",
+                    move.name,
                 )
             for line in base_lines + tax_lines:
                 rows.append(self._line_row(move, line, pivot, line.balance, ""))
@@ -330,10 +328,7 @@ class ExtfGenerator:
     def _pick_pivot(lines):
         """Pivot = receivable/payable line (largest when several), otherwise
         the line with the largest absolute amount."""
-        rp_lines = [
-            line for line in lines
-            if line.account_id.account_type in ("asset_receivable", "liability_payable")
-        ]
+        rp_lines = [line for line in lines if line.account_id.account_type in ("asset_receivable", "liability_payable")]
         pool = rp_lines or lines
         return max(pool, key=lambda line: abs(line.balance))
 
@@ -353,7 +348,8 @@ class ExtfGenerator:
                 _logger.info(
                     "DATEV export: tax line without matching base line "
                     "(tax id %s, amount %.2f) — falling back to variant A.",
-                    tax_id, total_tax,
+                    tax_id,
+                    total_tax,
                 )
                 return None
             total_base = sum(line.balance for line in blines)
@@ -369,12 +365,12 @@ class ExtfGenerator:
 
     def _line_row(self, move, line, pivot, signed_amount: float, bu_key: str) -> List[str]:
         row = [""] * len(self._COLUMNS)
-        row[0] = self._format_amount(signed_amount)             # 1 Umsatz
-        row[1] = "S" if signed_amount > 0 else "H"              # 2 Soll/Haben
-        row[2] = self._company.currency_id.name or "EUR"        # 3 WKZ Umsatz
-        row[6] = self._resolve_account(line.account_id)         # 7 Konto
-        row[7] = self._resolve_account(pivot.account_id)        # 8 Gegenkonto
-        row[8] = bu_key                                         # 9 BU-Schlüssel
+        row[0] = self._format_amount(signed_amount)  # 1 Umsatz
+        row[1] = "S" if signed_amount > 0 else "H"  # 2 Soll/Haben
+        row[2] = self._company.currency_id.name or "EUR"  # 3 WKZ Umsatz
+        row[6] = self._resolve_account(line.account_id)  # 7 Konto
+        row[7] = self._resolve_account(pivot.account_id)  # 8 Gegenkonto
+        row[8] = bu_key  # 9 BU-Schlüssel
         row[9] = move.date.strftime("%d%m") if move.date else ""  # 10 Belegdatum (DDMM)
         row[10] = self._sanitize_belegfeld(move.ref or move.name or "")  # 11 Belegfeld 1
         row[13] = self._sanitize_text(line.name or move.name or "", 60)  # 14 Buchungstext

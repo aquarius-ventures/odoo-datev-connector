@@ -26,14 +26,13 @@ class DatevToken(models.Model):
         copy=False,
         readonly=True,
         help="DATEV short-term refresh tokens live 11 hours from the first "
-             "access-token issuance; a token refresh does NOT extend this.",
+        "access-token issuance; a token refresh does NOT extend this.",
     )
     issued_by_name = fields.Char(
         string="Issued By",
         copy=False,
         readonly=True,
-        help="Full name of the DATEV user who authorized this connection "
-             "(from the OIDC userinfo endpoint).",
+        help="Full name of the DATEV user who authorized this connection " "(from the OIDC userinfo endpoint).",
     )
     scope = fields.Char(string="Granted Scopes")
     state = fields.Selection(
@@ -88,24 +87,24 @@ class DatevToken(models.Model):
             except Exception as exc:
                 # One failed attempt disconnects the token — no retry spam
                 # against an invalid RT (10% error-rate requirement).
-                token.write({
-                    "access_token": False,
-                    "refresh_token": False,
-                    "token_expiry": False,
-                    "state": "disconnected",
-                })
+                token.write(
+                    {
+                        "access_token": False,
+                        "refresh_token": False,
+                        "token_expiry": False,
+                        "state": "disconnected",
+                    }
+                )
                 token.company_id.sudo().datev_last_error = (
-                    "Token-Refresh fehlgeschlagen — bitte neu mit DATEV verbinden. (%s)"
-                    % str(exc)[:200]
+                    "Token-Refresh fehlgeschlagen — bitte neu mit DATEV verbinden. (%s)" % str(exc)[:200]
                 )
                 # Persist the disconnect before raising — the context manager
                 # would otherwise roll it back together with the exception.
                 cr.commit()
                 self.invalidate_recordset()
-                raise UserError(_(
-                    "DATEV: Die Verbindung ist abgelaufen oder ungültig. "
-                    "Bitte neu mit DATEV verbinden."
-                )) from exc
+                raise UserError(
+                    _("DATEV: Die Verbindung ist abgelaufen oder ungültig. " "Bitte neu mit DATEV verbinden.")
+                ) from exc
             token._store_token_data(token_data)
             access_token = token.access_token
         # The inner transaction committed; drop stale values from this env's cache.
@@ -131,9 +130,7 @@ class DatevToken(models.Model):
         self.ensure_one()
         vals = {"refresh_token_expiry": datetime.utcnow() + timedelta(hours=11)}
         info = service.get_userinfo(token_data.get("access_token") or self.access_token)
-        name = " ".join(
-            part for part in (info.get("given_name"), info.get("family_name")) if part
-        ) or info.get("name")
+        name = " ".join(part for part in (info.get("given_name"), info.get("family_name")) if part) or info.get("name")
         vals["issued_by_name"] = name or False
         self.write(vals)
 

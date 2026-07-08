@@ -16,12 +16,28 @@
                     </group>
                 </group>
                 <group string="Filter">
-                    <field name="journal_ids" widget="many2many_tags" options="{'no_create': True}" />
-                    <field name="designation" placeholder="z. B. Ausgangsrechnungen 01/2026" />
+                    <field
+                        name="journal_ids"
+                        widget="many2many_tags"
+                        options="{'no_create': True}"
+                    />
+                    <field
+                        name="designation"
+                        placeholder="z. B. Ausgangsrechnungen 01/2026"
+                    />
                 </group>
                 <footer>
-                    <button name="action_export" type="object" string="Export" class="btn-primary" />
-                    <button string="Cancel" class="btn-secondary" special="cancel" />
+                    <button
+                        name="action_export"
+                        type="object"
+                        string="Export"
+                        class="btn-primary"
+                    />
+                    <button
+                        string="Cancel"
+                        class="btn-secondary"
+                        special="cancel"
+                    />
                 </footer>
             </form>
         </field>

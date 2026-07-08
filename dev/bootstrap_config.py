@@ -47,11 +47,7 @@ def load_secrets() -> dict:
 
 
 def main():
-    secrets = load_secrets()
-    addons_path = os.path.abspath(str(ROOT / ADDONS_PATH_RELATIVE.split(",")[0]))
-    odoo_addons = os.path.abspath(
-        str(ROOT.parent / "odoo-17-src" / "addons")
-    )
+    odoo_addons = os.path.abspath(str(ROOT.parent / "odoo-17-src" / "addons"))
     conf = CONF_TEMPLATE.format(addons_path=f"{ROOT},{odoo_addons}")
     ODOO_CONF.write_text(conf)
     print(f"[✓] Written {ODOO_CONF}")
