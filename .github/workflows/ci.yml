@@ -73,14 +73,11 @@ jobs:
             --stop-after-init --no-http
 
       - name: Run tests
-        env:
-          PGUSER: odoo
-          PGPASSWORD: odoo
-          PGHOST: localhost
         run: |
+          printf '[options]\ndb_host = localhost\ndb_port = 5432\ndb_user = odoo\ndb_password = odoo\naddons_path = /tmp/odoo/addons,.\n' > /tmp/odoo-ci.conf
           python -m pytest \
             --odoo-database=odoo_test \
-            --odoo-addons-path=/tmp/odoo/addons,. \
+            --odoo-config=/tmp/odoo-ci.conf \
             --cov=. \
             --cov-report=xml \
             datev_connector/tests/ \
