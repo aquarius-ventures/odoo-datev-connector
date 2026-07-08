@@ -104,11 +104,14 @@ class TestDatevApiService(TransactionCase):
             },
         )
         service = self._make_service()
-        service._http(
-            "GET",
-            "https://api.datev.de/test",
-            headers={"Authorization": "Bearer SECRET-TOKEN", "Accept": "application/json"},
-        )
+        import logging as _logging
+
+        with self.assertNoLogs("odoo.addons.datev_connector.services.datev_api", _logging.ERROR):
+            service._http(
+                "GET",
+                "https://api.datev.de/test",
+                headers={"Authorization": "Bearer SECRET-TOKEN", "Accept": "application/json"},
+            )
         # The log entry is committed in its own transaction (so it survives
         # business rollbacks) — it is therefore invisible to this test's
         # repeatable-read snapshot and must be checked via a fresh cursor.
