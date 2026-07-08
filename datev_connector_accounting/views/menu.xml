@@ -24,4 +24,13 @@
         sequence="20"
         groups="account.group_account_manager"
     />
+
+    <menuitem
+        id="menu_datev_tax_mapping"
+        name="Tax Mappings (BU-Schlüssel)"
+        parent="menu_datev_accounting"
+        action="action_datev_tax_mapping"
+        sequence="30"
+        groups="account.group_account_manager"
+    />
 </odoo>

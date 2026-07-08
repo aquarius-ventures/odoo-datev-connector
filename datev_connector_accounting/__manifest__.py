@@ -1,6 +1,6 @@
 {
     "name": "DATEV Cloud Connector - Accounting",
-    "version": "17.0.1.1.8",
+    "version": "17.0.1.2.0",
     "category": "Accounting/Accounting",
     "summary": "Bidirectional sync of journal entries with DATEV Cloud via EXTF format",
     "author": "Aquarius Ventures",
@@ -11,8 +11,10 @@
         "security/ir.model.access.csv",
         "data/ir_cron.xml",
         "views/datev_account_mapping_views.xml",
+        "views/datev_tax_mapping_views.xml",
         "views/account_move_views.xml",
         "views/datev_export_wizard_views.xml",
+        "views/res_config_settings_views.xml",
         "views/menu.xml",
     ],
     "installable": True,
