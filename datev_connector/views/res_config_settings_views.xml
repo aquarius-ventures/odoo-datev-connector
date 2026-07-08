@@ -20,7 +20,36 @@
                                    widget="badge"
                                    readonly="1"
                                    decoration-success="datev_connection_state == 'connected'"
+                                   decoration-warning="datev_connection_state == 'connected_unverified'"
                                    decoration-danger="datev_connection_state == 'disconnected'" />
+                            <div class="text-muted"
+                                 invisible="datev_connection_state != 'connected_unverified'">
+                                Verbindung besteht, aber der Mandant wurde noch nicht geprüft —
+                                bitte „Mandant prüfen" ausführen.
+                            </div>
+                        </setting>
+                        <setting string="Verbindungsdetails" name="datev_token_info_setting"
+                                 help="Pflichtangaben zur DATEV-Verbindung: Ablauf des Refresh-Tokens,
+                                       ausstellende Person und gewährte Scopes.">
+                            <div invisible="datev_connection_state == 'disconnected'">
+                                <div>
+                                    <strong>Refresh-Token gültig bis: </strong>
+                                    <field name="datev_refresh_token_expiry" readonly="1" class="oe_inline" />
+                                </div>
+                                <div>
+                                    <strong>Verbunden durch: </strong>
+                                    <field name="datev_issued_by_name" readonly="1" class="oe_inline" />
+                                </div>
+                                <div>
+                                    <strong>Gewährte Scopes: </strong>
+                                    <field name="datev_granted_scopes" readonly="1" class="oe_inline" />
+                                </div>
+                            </div>
+                            <div>
+                                <a href="https://apps.datev.de/tokrevui" target="_blank">
+                                    Verbundene Anwendungen in DATEV verwalten/widerrufen
+                                </a>
+                            </div>
                         </setting>
                         <setting string="Sandbox Mode" name="datev_sandbox_setting"
                                  help="Use DATEV sandbox endpoints for testing">
@@ -61,9 +90,17 @@
                             <field name="datev_client_number" placeholder="z. B. 1" />
                             <button name="action_datev_fetch_clients"
                                     type="object"
-                                    string="Fetch from DATEV"
+                                    string="Mandanten abrufen"
                                     class="btn-secondary"
                                     invisible="datev_connection_state == 'disconnected'" />
+                            <button name="action_datev_check_client"
+                                    type="object"
+                                    string="Mandant prüfen"
+                                    class="btn-secondary"
+                                    invisible="datev_connection_state == 'disconnected'" />
+                            <div class="text-muted" invisible="not datev_client_check_info">
+                                <field name="datev_client_check_info" readonly="1" />
+                            </div>
                         </setting>
                         <setting string="Account Number Length" name="datev_account_number_length_setting"
                                  help="Digits in DATEV account numbers (Sachkontonummernlänge). SKR03/SKR04 = 4.">

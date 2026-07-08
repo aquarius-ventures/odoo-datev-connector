@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_datev_client_select_wizard_form" model="ir.ui.view">
+        <field name="name">datev.client.select.wizard.form</field>
+        <field name="model">datev.client.select.wizard</field>
+        <field name="arch" type="xml">
+            <form string="DATEV Mandant auswählen">
+                <p>
+                    Wählen Sie den DATEV Mandanten für die Firma
+                    <field name="company_id" readonly="1" class="oe_inline" />:
+                </p>
+                <field name="line_ids" nolabel="1">
+                    <tree create="false" delete="false" editable="bottom">
+                        <field name="name" />
+                        <field name="consultant_number" />
+                        <field name="client_number" />
+                        <field name="services" />
+                        <button name="action_select" type="object"
+                                string="Übernehmen" class="btn-primary btn-sm" />
+                    </tree>
+                </field>
+                <footer>
+                    <button string="Schließen" class="btn-secondary" special="cancel" />
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

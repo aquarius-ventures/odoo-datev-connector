@@ -8,6 +8,8 @@
                 <field name="company_id" />
                 <field name="state" widget="badge" decoration-success="state == 'connected'" decoration-danger="state == 'disconnected'" />
                 <field name="token_expiry" />
+                <field name="refresh_token_expiry" />
+                <field name="issued_by_name" />
                 <field name="scope" />
             </tree>
         </field>
@@ -35,9 +37,16 @@
                         </group>
                         <group>
                             <field name="token_expiry" />
+                            <field name="refresh_token_expiry" />
+                            <field name="issued_by_name" />
                             <field name="scope" />
                         </group>
                     </group>
+                    <div>
+                        <a href="https://apps.datev.de/tokrevui" target="_blank">
+                            Token in DATEV verwalten/widerrufen (Verbundene Anwendungen)
+                        </a>
+                    </div>
                 </sheet>
             </form>
         </field>

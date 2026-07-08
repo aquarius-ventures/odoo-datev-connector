@@ -2,3 +2,5 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_datev_token_manager,datev.token manager,model_datev_token,base.group_system,1,1,1,1
 access_datev_oauth_flow_system,datev.oauth.flow system,model_datev_oauth_flow,base.group_system,1,1,1,1
 access_datev_api_log_system,datev.api.log system,model_datev_api_log,base.group_system,1,0,0,1
+access_datev_client_select_wizard,datev.client.select.wizard system,model_datev_client_select_wizard,base.group_system,1,1,1,1
+access_datev_client_select_wizard_line,datev.client.select.wizard.line system,model_datev_client_select_wizard_line,base.group_system,1,1,1,1

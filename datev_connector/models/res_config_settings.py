@@ -38,9 +38,33 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.datev_service_hr", readonly=False,
     )
     datev_connection_state = fields.Selection(
-        [("disconnected", "Disconnected"), ("connected", "Connected")],
+        [
+            ("disconnected", "Disconnected"),
+            ("connected_unverified", "Verbunden — Mandant ungeprüft"),
+            ("connected", "Connected"),
+        ],
         string="Connection Status",
         compute="_compute_datev_connection_state",
+    )
+    datev_client_verified = fields.Boolean(
+        related="company_id.datev_client_verified",
+    )
+    datev_client_check_info = fields.Char(
+        related="company_id.datev_client_check_info",
+    )
+    # Mandatory connection details (DATEV MUST): RT expiry, issuer name,
+    # granted scopes.
+    datev_refresh_token_expiry = fields.Datetime(
+        string="Refresh-Token gültig bis",
+        compute="_compute_datev_token_info",
+    )
+    datev_issued_by_name = fields.Char(
+        string="Verbunden durch",
+        compute="_compute_datev_token_info",
+    )
+    datev_granted_scopes = fields.Char(
+        string="Gewährte Scopes",
+        compute="_compute_datev_token_info",
     )
 
     @api.depends("company_id", "datev_client_id")
@@ -49,7 +73,24 @@ class ResConfigSettings(models.TransientModel):
             token = self.env["datev.token"].search(
                 [("company_id", "=", rec.company_id.id)], limit=1
             )
-            rec.datev_connection_state = token.state if token else "disconnected"
+            if not token or token.state != "connected":
+                rec.datev_connection_state = "disconnected"
+            elif not rec.company_id.datev_client_verified:
+                # Token vorhanden, aber Berechtigungs-/Mandantenprüfung steht
+                # aus — erst nach bestätigtem Check ist die Verbindung "grün".
+                rec.datev_connection_state = "connected_unverified"
+            else:
+                rec.datev_connection_state = "connected"
+
+    @api.depends("company_id")
+    def _compute_datev_token_info(self):
+        for rec in self:
+            token = self.env["datev.token"].search(
+                [("company_id", "=", rec.company_id.id)], limit=1
+            )
+            rec.datev_refresh_token_expiry = token.refresh_token_expiry if token else False
+            rec.datev_issued_by_name = token.issued_by_name if token else False
+            rec.datev_granted_scopes = token.scope if token else False
 
     @api.model
     def _get_datev_config(self, company=None):
@@ -94,39 +135,95 @@ class ResConfigSettings(models.TransientModel):
             token.action_disconnect()
 
     def action_datev_fetch_clients(self):
-        """Fetch available DATEV clients using the authenticated user token."""
+        """Open a scrollable selection dialog with all clients the token may
+        access (name, consultant/client number, booked services)."""
         self.ensure_one()
         config = self._get_datev_config(self.company_id)
 
         from ..services.datev_api import DatevApiService
+        from ..wizards.datev_client_select_wizard import _services_to_str
 
         service = DatevApiService(self.env, config)
-        items = service.accounting_clients_list()
+        items = []
+        top, skip = 100, 0
+        # Paging per spec: top/skip, max. 100 per page.
+        for _page in range(20):
+            page_items = service.accounting_clients_list(top=top, skip=skip)
+            items.extend(page_items)
+            if len(page_items) < top:
+                break
+            skip += top
         if not items:
             raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 
-        def _fmt_client(c):
-            services = ", ".join(s.get("name", "") for s in c.get("services", [])) or "–"
-            return (
-                "  {name}  |  Beraternummer: {berater}  |  Mandantennummer: {mandant}"
-                "  |  Services: {services}"
-            ).format(
-                name=c.get("name", ""),
-                berater=c.get("consultant_number", ""),
-                mandant=c.get("client_number", ""),
-                services=services,
-            )
+        wizard = self.env["datev.client.select.wizard"].create({
+            "company_id": self.company_id.id,
+            "line_ids": [
+                (0, 0, {
+                    "name": c.get("name", ""),
+                    "consultant_number": str(c.get("consultant_number", "")),
+                    "client_number": str(c.get("client_number", "")),
+                    "services": _services_to_str(c) or "–",
+                })
+                for c in items
+            ],
+        })
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("DATEV Mandant auswählen"),
+            "res_model": "datev.client.select.wizard",
+            "res_id": wizard.id,
+            "view_mode": "form",
+            "target": "new",
+        }
 
-        client_list = "\n".join(_fmt_client(c) for c in items)
+    def action_datev_check_client(self):
+        """Authorization check (MUST): confirm via GET /clients/{client-id}
+        that the configured client exists, is accessible with this token and
+        has the Buchungsdatenservice booked."""
+        self.ensure_one()
+        company = self.company_id
+        client_id = company.datev_get_client_id()
+
+        from ..services.datev_api import DatevApiService
+        from ..wizards.datev_client_select_wizard import (
+            _has_accounting_service,
+            _services_to_str,
+        )
+
+        service = DatevApiService(self.env, self._get_datev_config(company))
+        client = service.accounting_clients_get(client_id)
+        services_str = _services_to_str(client) or "–"
+        has_service = _has_accounting_service(services_str)
+        company.write({
+            "datev_client_verified": has_service,
+            "datev_client_check_info": (
+                "%s — Services: %s" % (client.get("name", client_id), services_str)
+            )[:250],
+        })
+        if not has_service:
+            return {
+                "type": "ir.actions.client",
+                "tag": "display_notification",
+                "params": {
+                    "title": _("DATEV Mandantenprüfung"),
+                    "message": _(
+                        "Mandant %s ist erreichbar, aber der Buchungsdatenservice "
+                        "ist nicht gebucht (Services: %s). Bitte beim Steuerberater/"
+                        "DATEV aktivieren: http://go.datev.de/datenservices-einrichten"
+                    ) % (client_id, services_str),
+                    "type": "warning",
+                    "sticky": True,
+                },
+            }
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
             "params": {
-                "title": _("Available DATEV Clients"),
-                "message": _(
-                    "Enter Beraternummer and Mandantennummer in the fields above:\n%s"
-                ) % client_list,
-                "type": "info",
-                "sticky": True,
+                "title": _("DATEV Mandantenprüfung"),
+                "message": _("Mandant %s bestätigt — %s") % (
+                    client.get("name", client_id), services_str,
+                ),
+                "type": "success",
             },
         }

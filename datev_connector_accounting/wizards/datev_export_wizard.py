@@ -113,12 +113,24 @@ class DatevExportWizard(models.TransientModel):
         )
 
         now = fields.Datetime.now()
+        # SHOULD: respect the Retry-After header as the earliest poll time.
+        next_poll = False
+        retry_after = resp.headers.get("Retry-After")
+        if retry_after:
+            try:
+                from datetime import timedelta
+                next_poll = now + timedelta(seconds=int(retry_after))
+            except (TypeError, ValueError):
+                pass
         moves.write({
             "datev_exported": True,
             "datev_export_date": now,
             "datev_job_url": job_url or False,
             "datev_job_state": "pending" if job_url else False,
             "datev_job_error": False,
+            "datev_job_created_at": now,
+            "datev_job_last_poll": False,
+            "datev_job_next_poll": next_poll,
         })
         return {
             "type": "ir.actions.client",

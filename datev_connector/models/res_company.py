@@ -38,6 +38,28 @@ class ResCompany(models.Model):
              "und aktiviert sein: http://go.datev.de/datenservices-einrichten",
     )
 
+    datev_client_verified = fields.Boolean(
+        string="DATEV Mandant geprüft",
+        readonly=True,
+        copy=False,
+        help="Der Zugriff auf den Mandanten und der gebuchte Datenservice "
+             "wurden über GET /clients/{client-id} bestätigt. Wird bei "
+             "Änderung der Berater-/Mandantennummer zurückgesetzt.",
+    )
+    datev_client_check_info = fields.Char(
+        string="DATEV Mandantenprüfung",
+        readonly=True,
+        copy=False,
+    )
+
+    def write(self, vals):
+        # Changing the client identification invalidates a previous
+        # authorization check.
+        if {"datev_consultant_number", "datev_client_number"} & set(vals.keys()):
+            vals.setdefault("datev_client_verified", False)
+            vals.setdefault("datev_client_check_info", False)
+        return super().write(vals)
+
     def _datev_module_installed(self, name):
         return bool(
             self.env["ir.module.module"].sudo().search_count(

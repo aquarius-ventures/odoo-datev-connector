@@ -12,6 +12,7 @@
         "data/ir_cron.xml",
         "views/datev_employee_sync_wizard_views.xml",
         "views/hr_employee_views.xml",
+        "views/res_config_settings_views.xml",
     ],
     "demo": [
         "demo/hr_employee_demo.xml",
