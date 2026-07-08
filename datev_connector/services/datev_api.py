@@ -347,6 +347,32 @@ class DatevApiService:
     # HR Exchange (Personalstammdaten)
     # ------------------------------------------------------------------
 
+    def hr_exchange_get_client(self, client_id: str) -> dict:
+        """Authorization check (MUST): verify that the token grants access to
+        the payroll client before any data transfer."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}"
+        resp = self._request("GET", url, extra_headers={"X-DATEV-Client-Id": self._client_id})
+        return resp.json()
+
+    def hr_exchange_create_fetch_job(self, client_id: str, reference_date: str,
+                                     resource_name: str = "employees") -> dict:
+        """Start an async read job (MUST: complete read before create/modify)."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs"
+        resp = self._request(
+            "POST", url,
+            json={"resource_name": resource_name, "reference_date": reference_date},
+            extra_headers={"Target-System": "lodas", "X-DATEV-Client-Id": self._client_id},
+        )
+        return resp.json()
+
+    def hr_exchange_job_result(self, client_id: str, job_uuid: str,
+                               resource: str = "employees") -> dict:
+        """Fetch the result document of a finished job (MUST after every
+        creation/modification: verify data persistence, evaluate errors[])."""
+        url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}/result/{resource}"
+        resp = self._request("GET", url, extra_headers={"X-DATEV-Client-Id": self._client_id})
+        return resp.json()
+
     def hr_exchange_post_employees(self, client_id: str, employees: list, reference_date: str) -> dict:
         """Create new employees in DATEV LODAS (async — returns 202 job)."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/employees"

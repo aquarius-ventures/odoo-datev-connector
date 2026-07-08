@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import re
+from datetime import timedelta
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
@@ -128,11 +129,27 @@ class HrEmployee(models.Model):
         readonly=True,
         groups="hr.group_hr_user",
     )
+    datev_sync_dirty = fields.Boolean(
+        string="DATEV Sync ausstehend",
+        copy=False,
+        groups="hr.group_hr_user",
+        help="Intern: Es gibt Änderungen, die noch nicht an DATEV übertragen "
+             "wurden. Ein Sammel-Cron überträgt gebündelt (Debounce).",
+    )
     datev_job_id = fields.Char(
         string="DATEV Job-ID",
         readonly=True,
         copy=False,
         groups="hr.group_hr_user",
+    )
+    datev_job_phase = fields.Selection(
+        [("fetch", "Fetch (Read before write)"), ("push", "Push")],
+        string="DATEV Job-Phase",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+        help="fetch = Pflicht-Lesevorgang vor Anlage/Änderung; "
+             "push = eigentliche Übertragung.",
     )
     datev_job_state = fields.Selection(
         [("pending", "Pending"), ("succeeded", "Succeeded"), ("failed", "Failed")],
@@ -143,6 +160,18 @@ class HrEmployee(models.Model):
     )
     datev_job_error = fields.Text(
         string="DATEV Job-Fehler",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+    )
+    datev_job_created_at = fields.Datetime(
+        string="DATEV Job erstellt am",
+        readonly=True,
+        copy=False,
+        groups="hr.group_hr_user",
+    )
+    datev_job_last_poll = fields.Datetime(
+        string="DATEV Job zuletzt abgefragt",
         readonly=True,
         copy=False,
         groups="hr.group_hr_user",
@@ -344,10 +373,26 @@ class HrEmployee(models.Model):
         if not self.env.context.get("_datev_sync_in_progress") and (
             _DATEV_SYNC_FIELDS & set(vals.keys())
         ):
+            # Debounce: only mark as dirty — a collecting cron bundles several
+            # rapid edits (and several employees) into ONE DATEV transfer
+            # instead of firing a job per save.
             to_sync = self.filtered("datev_sync_enabled")
             if to_sync:
-                to_sync.with_context(_datev_sync_in_progress=True)._action_datev_sync()
+                to_sync.with_context(_datev_sync_in_progress=True).write(
+                    {"datev_sync_dirty": True}
+                )
         return result
+
+    @api.model
+    def _cron_datev_sync_dirty(self):
+        dirty = self.search([
+            ("datev_sync_dirty", "=", True),
+            ("datev_sync_enabled", "=", True),
+            # Don't start a new cycle while a job for this employee is running.
+            ("datev_job_state", "!=", "pending"),
+        ])
+        if dirty:
+            dirty.with_context(_datev_sync_in_progress=True)._action_datev_sync()
 
     def datev_get_missing_required_fields(self):
         """Return list of human-readable labels for unfilled required fields."""
@@ -359,33 +404,59 @@ class HrEmployee(models.Model):
         ]
 
     def _action_datev_sync(self):
-        """Push this employee's master data to DATEV Cloud (LODAS)."""
+        """Start a DATEV sync cycle for these employees.
+
+        DATEV hr:exchange mandates (interface requirements):
+        1. Authorization check (GET /clients/{id}) before any transfer.
+        2. A complete READ before any creation/modification — implemented as an
+           async fetch job; the actual POST/PUT happens when the fetch result
+           is available (see _poll_datev_hr_jobs / _continue_after_fetch).
+        3. After every creation/modification a job status + result check.
+        """
+        ready = self.browse()
         for emp in self:
             missing = emp.datev_get_missing_required_fields()
             if missing:
                 error = "Fehlende Pflichtfelder: " + ", ".join(missing)
-                emp.write({"datev_sync_error": error, "datev_last_sync": False})
+                emp.write({"datev_sync_error": error, "datev_sync_dirty": False})
                 _logger.warning(
                     "DATEV sync skipped for employee %s (%d): %s",
                     emp.name, emp.id, error,
                 )
                 continue
+            ready |= emp
 
+        from odoo.addons.datev_connector.services.datev_api import DatevApiService
+        Settings = self.env["res.config.settings"]
+
+        for company in ready.mapped(lambda e: e.company_id or self.env.company):
+            emps = ready.filtered(lambda e: (e.company_id or self.env.company) == company)
             try:
-                self._push_employee_to_datev(emp)
-                emp.write({
-                    "datev_last_sync": fields.Datetime.now(),
-                    "datev_sync_error": False,
-                })
-                _logger.info(
-                    "DATEV sync succeeded for employee %s (Personalnr. %s)",
-                    emp.name, emp.datev_personnel_number,
-                )
+                client_id = company.datev_get_client_id()
+                service = DatevApiService(self.env, Settings._get_datev_config(company))
+                # MUST 1: authorization check before data transfer
+                service.hr_exchange_get_client(client_id)
+                # MUST 2: read before write — async fetch of all employees
+                reference_date = fields.Date.today().strftime("%Y-%m")
+                job = service.hr_exchange_create_fetch_job(client_id, reference_date)
             except Exception as exc:
-                emp.write({"datev_sync_error": str(exc)})
-                _logger.error(
-                    "DATEV sync failed for employee %s: %s", emp.name, exc
-                )
+                emps.write({"datev_sync_error": str(exc)[:1000]})
+                _logger.error("DATEV hr:exchange sync start failed (%s): %s", company.name, exc)
+                continue
+            emps.write({
+                "datev_sync_dirty": False,
+                "datev_sync_error": False,
+                "datev_job_id": job.get("id"),
+                "datev_job_phase": "fetch",
+                "datev_job_state": "pending",
+                "datev_job_error": False,
+                "datev_job_created_at": fields.Datetime.now(),
+                "datev_job_last_poll": False,
+            })
+            _logger.info(
+                "DATEV hr:exchange fetch job %s started for %d employee(s) of %s",
+                job.get("id"), len(emps), company.name,
+            )
 
     def _build_hr_exchange_payload(self):
         """Build the hr:exchange JSON payload for a single employee (self.ensure_one())."""
@@ -567,46 +638,17 @@ class HrEmployee(models.Model):
         """
         return (title or "").strip()[:30]
 
-    def _push_employee_to_datev(self, emp):
-        """Submit employee master data to the DATEV hr:exchange API (async job)."""
-        company = emp.company_id or self.env.company
-        datev_client_id = company.datev_get_client_id()
-        reference_date = fields.Date.today().strftime("%Y-%m")
-
-        config = self.env["res.config.settings"]._get_datev_config(company)
-
-        from odoo.addons.datev_connector.services.datev_api import DatevApiService
-
-        service = DatevApiService(self.env, config)
-        payload = emp._build_hr_exchange_payload()
-
-        if emp.datev_sync_created:
-            job = service.hr_exchange_put_employee(
-                datev_client_id,
-                emp.datev_personnel_number,
-                payload,
-                reference_date,
-            )
-        else:
-            job = service.hr_exchange_post_employees(
-                datev_client_id,
-                [payload],
-                reference_date,
-            )
-            emp.write({"datev_sync_created": True})
-
-        job_id = job.get("id")
-        _logger.info(
-            "DATEV hr:exchange job accepted: emp=%s (Personalnr. %s) | job_id=%s | state=%s",
-            emp.name, emp.datev_personnel_number, job_id, job.get("state"),
-        )
-        emp.write({"datev_job_id": job_id, "datev_job_state": "pending", "datev_job_error": False})
-
     def action_datev_refresh_job_status(self):
         pending = self.filtered(lambda e: e.datev_job_id and e.datev_job_state == "pending")
         if not pending:
             raise UserError("Keine offenen DATEV-Jobs für die ausgewählten Mitarbeiter.")
-        pending._poll_datev_hr_jobs()
+        polled = pending._poll_datev_hr_jobs()
+        if not polled:
+            # DATEV poll cadence: at most one status request per minute per job.
+            raise UserError(
+                "DATEV erlaubt höchstens eine Statusabfrage pro Minute. "
+                "Bitte in Kürze erneut versuchen."
+            )
         return {
             "type": "ir.actions.client",
             "tag": "display_notification",
@@ -640,42 +682,181 @@ class HrEmployee(models.Model):
                 parts.append(str(e))
         return "\n".join(p for p in parts if p) or False
 
+    # Poll cadence mandated by the hr:exchange interface requirements:
+    # first status request no earlier than 60 s after job creation, at most one
+    # request per minute, abort after 15 min without a state change.
+    _POLL_MIN_AGE = timedelta(seconds=60)
+    _POLL_INTERVAL = timedelta(seconds=60)
+    _POLL_TIMEOUT = timedelta(minutes=15)
+
     def _poll_datev_hr_jobs(self):
+        """Poll pending jobs (grouped per company+job) honoring the mandated
+        cadence and drive the fetch→push state machine. Returns the number of
+        jobs actually polled."""
         from odoo.addons.datev_connector.services.datev_api import DatevApiService
         Settings = self.env["res.config.settings"]
+        now = fields.Datetime.now()
 
+        groups = {}
         for emp in self:
-            company = emp.company_id or self.env.company
-            try:
-                datev_client_id = company.datev_get_client_id()
-                service = DatevApiService(self.env, Settings._get_datev_config(company))
-                result = service.hr_exchange_job_status(datev_client_id, emp.datev_job_id)
-            except Exception as exc:
-                _logger.warning("DATEV hr:exchange job poll failed for %s: %s", emp.name, exc)
+            if emp.datev_job_state != "pending" or not emp.datev_job_id:
+                continue
+            key = ((emp.company_id or self.env.company).id, emp.datev_job_id)
+            groups.setdefault(key, self.browse())
+            groups[key] |= emp
+
+        polled = 0
+        for (company_id, job_id), emps in groups.items():
+            company = self.env["res.company"].browse(company_id)
+            created_dates = [d for d in emps.mapped("datev_job_created_at") if d]
+            poll_dates = [d for d in emps.mapped("datev_job_last_poll") if d]
+            created_at = min(created_dates) if created_dates else False
+            last_poll = max(poll_dates) if poll_dates else False
+
+            if created_at and now - created_at < self._POLL_MIN_AGE:
+                continue
+            if last_poll and now - last_poll < self._POLL_INTERVAL:
+                continue
+            if created_at and now - created_at > self._POLL_TIMEOUT:
+                emps.write({
+                    "datev_job_state": "failed",
+                    "datev_job_error": "Zeitüberschreitung (15 min) — Status unbekannt, "
+                                       "bitte manuell in DATEV prüfen.",
+                })
+                _logger.error("DATEV hr:exchange job %s timed out after 15 min.", job_id)
                 continue
 
-            # Log the full raw response so the real state/error shapes can be verified.
-            _logger.info(
-                "DATEV hr:exchange job %s raw status (emp=%s): %s",
-                emp.datev_job_id, emp.name, result,
-            )
+            emps.write({"datev_job_last_poll": now})
+            polled += 1
+            try:
+                client_id = company.datev_get_client_id()
+                service = DatevApiService(self.env, Settings._get_datev_config(company))
+                status = service.hr_exchange_job_status(client_id, job_id)
+            except Exception as exc:
+                _logger.warning("DATEV hr:exchange job poll failed (%s): %s", job_id, exc)
+                continue
 
-            state = (result.get("state") or result.get("status") or "").lower()
+            _logger.info("DATEV hr:exchange job %s raw status: %s", job_id, status)
+            state = (status.get("state") or status.get("status") or "").lower()
+
+            if state in _JOB_FAILURE_STATES:
+                errors_str = self._extract_job_errors(status) or f"Job fehlgeschlagen (state={state})"
+                emps.write({"datev_job_state": "failed", "datev_job_error": errors_str})
+                continue
+            if state not in _JOB_SUCCESS_STATES:
+                _logger.info("DATEV hr:exchange job %s still pending (state=%r)", job_id, state)
+                continue
+
+            phase = emps[0].datev_job_phase
+            if phase == "fetch":
+                self._continue_after_fetch(service, client_id, job_id, emps)
+            else:
+                self._finalize_push(service, client_id, job_id, emps, status)
+        return polled
+
+    def _continue_after_fetch(self, service, client_id, job_id, emps):
+        """Fetch job finished: read the employee list, decide create vs update
+        per employee, then start the actual push (bulk POST / per-employee PUT)."""
+        try:
+            result = service.hr_exchange_job_result(client_id, job_id, "employees")
+        except Exception as exc:
+            emps.write({
+                "datev_job_state": "failed",
+                "datev_job_error": "Fetch-Ergebnis nicht abrufbar: %s" % str(exc)[:500],
+            })
+            return
+        entries = result.get("employees", result) if isinstance(result, dict) else result
+        existing_numbers = set()
+        for entry in entries or []:
+            if isinstance(entry, dict) and entry.get("personnel_number") is not None:
+                existing_numbers.add(str(entry["personnel_number"]))
+
+        reference_date = fields.Date.today().strftime("%Y-%m")
+        to_create = self.browse()
+        create_payloads = []
+        for emp in emps:
+            try:
+                payload = emp._build_hr_exchange_payload()
+            except Exception as exc:
+                emp.write({
+                    "datev_job_state": "failed",
+                    "datev_job_error": str(exc)[:1000],
+                })
+                continue
+            exists = str(int(emp.datev_personnel_number or "0")) in existing_numbers
+            if exists:
+                # Existence derived from the fetch result — not from a local flag.
+                try:
+                    job = service.hr_exchange_put_employee(
+                        client_id, emp.datev_personnel_number, payload, reference_date,
+                    )
+                except Exception as exc:
+                    emp.write({"datev_job_state": "failed", "datev_job_error": str(exc)[:1000]})
+                    continue
+                emp.write(self._push_job_vals(job))
+            else:
+                to_create |= emp
+                create_payloads.append(payload)
+
+        if to_create:
+            try:
+                job = service.hr_exchange_post_employees(client_id, create_payloads, reference_date)
+            except Exception as exc:
+                to_create.write({"datev_job_state": "failed", "datev_job_error": str(exc)[:1000]})
+                return
+            to_create.write(self._push_job_vals(job))
+
+    @staticmethod
+    def _push_job_vals(job):
+        return {
+            "datev_job_id": job.get("id"),
+            "datev_job_phase": "push",
+            "datev_job_state": "pending",
+            "datev_job_error": False,
+            "datev_job_created_at": fields.Datetime.now(),
+            "datev_job_last_poll": False,
+        }
+
+    def _finalize_push(self, service, client_id, job_id, emps, status):
+        """Push job reports success: fetch the result document (MUST) — it can
+        still contain errors[] and carries the persisted personnel_number."""
+        result = {}
+        try:
+            result = service.hr_exchange_job_result(client_id, job_id, "employees")
+        except Exception as exc:
+            _logger.warning("DATEV hr:exchange result fetch failed (%s): %s", job_id, exc)
+
+        errors_str = self._extract_job_errors(status)
+        if not errors_str and isinstance(result, dict):
             errors_str = self._extract_job_errors(result)
 
-            if state in _JOB_FAILURE_STATES or (state in _JOB_SUCCESS_STATES and errors_str):
-                outcome = "failed"
-            elif state in _JOB_SUCCESS_STATES:
-                outcome = "succeeded"
-            else:
-                # Unknown or still-running state → keep pending; surfaced in log above.
-                _logger.info(
-                    "DATEV hr:exchange job %s still pending (state=%r) for %s",
-                    emp.datev_job_id, state, emp.name,
-                )
-                continue
+        if errors_str:
+            # Success state but errors in the result → treat as failed;
+            # datev_sync_created stays untouched: the next cycle re-derives
+            # existence from a fresh fetch.
+            emps.write({"datev_job_state": "failed", "datev_job_error": errors_str})
+            _logger.error("DATEV hr:exchange job %s finished WITH errors: %s", job_id, errors_str)
+            return
 
-            emp.write({"datev_job_state": outcome, "datev_job_error": errors_str})
-            _logger.info(
-                "DATEV hr:exchange job %s → %s: emp=%s", emp.datev_job_id, outcome, emp.name
-            )
+        entries = result.get("employees") if isinstance(result, dict) else None
+        by_number = {}
+        for entry in entries or []:
+            if isinstance(entry, dict) and entry.get("personnel_number") is not None:
+                by_number[str(entry["personnel_number"])] = entry
+
+        now = fields.Datetime.now()
+        for emp in emps:
+            vals = {
+                "datev_job_state": "succeeded",
+                "datev_job_error": False,
+                "datev_sync_created": True,
+                "datev_last_sync": now,
+                "datev_sync_error": False,
+            }
+            # Persist the personnel number DATEV reports back (it may have been
+            # auto-assigned or normalized).
+            current = str(int(emp.datev_personnel_number or "0"))
+            if by_number and current not in by_number and len(emps) == 1 and len(by_number) == 1:
+                vals["datev_personnel_number"] = next(iter(by_number))
+            emp.write(vals)
+        _logger.info("DATEV hr:exchange job %s verified successfully (%d employee(s)).", job_id, len(emps))

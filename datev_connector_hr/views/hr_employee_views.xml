@@ -74,6 +74,8 @@
                                    decoration-success="datev_job_state == 'succeeded'"
                                    decoration-danger="datev_job_state == 'failed'"
                                    invisible="not datev_job_state" />
+                            <field name="datev_job_phase" readonly="1"
+                                   invisible="datev_job_state != 'pending'" />
                             <button name="action_datev_refresh_job_status" type="object"
                                     string="Status abrufen" class="btn-secondary btn-sm"
                                     invisible="datev_job_state != 'pending'" />

@@ -5,7 +5,19 @@
         <field name="model_id" ref="datev_connector_hr.model_hr_employee" />
         <field name="state">code</field>
         <field name="code">model._cron_poll_datev_hr_jobs()</field>
-        <field name="interval_number">10</field>
+        <field name="interval_number">2</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+        <field name="doall">False</field>
+    </record>
+
+    <record id="ir_cron_datev_sync_dirty" model="ir.cron">
+        <field name="name">DATEV: Übertragung geänderter Mitarbeiter (gebündelt)</field>
+        <field name="model_id" ref="datev_connector_hr.model_hr_employee" />
+        <field name="state">code</field>
+        <field name="code">model._cron_datev_sync_dirty()</field>
+        <field name="interval_number">5</field>
         <field name="interval_type">minutes</field>
         <field name="numbercall">-1</field>
         <field name="active">True</field>
