@@ -3,7 +3,10 @@
     <record id="view_move_list_datev_documents" model="ir.ui.view">
         <field name="name">account.move.list.datev.documents</field>
         <field name="model">account.move</field>
-        <field name="inherit_id" ref="datev_connector_accounting.view_move_list_datev" />
+        <field
+            name="inherit_id"
+            ref="datev_connector_accounting.view_move_list_datev"
+        />
         <field name="arch" type="xml">
             <xpath expr="//field[@name='datev_export_date']" position="after">
                 <field name="datev_document_uploaded_at" optional="hide" />

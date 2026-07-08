@@ -5,7 +5,8 @@ class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
     datev_service_documents = fields.Boolean(
-        related="company_id.datev_service_documents", readonly=False,
+        related="company_id.datev_service_documents",
+        readonly=False,
     )
 
     def action_datev_check_client_documents(self):

@@ -22,8 +22,8 @@ class AccountMove(models.Model):
         copy=False,
         readonly=True,
         help="RFC-4122-GUID des Belegbilds in DATEV Unternehmen online. Wird "
-             "von Odoo erzeugt und im EXTF-Beleglink (BEDI) referenziert; "
-             "ein erneuter Export erzeugt dadurch keine Dubletten.",
+        "von Odoo erzeugt und im EXTF-Beleglink (BEDI) referenziert; "
+        "ein erneuter Export erzeugt dadurch keine Dubletten.",
     )
     datev_document_uploaded_at = fields.Datetime(
         string="DATEV Belegbild übertragen am",
@@ -83,5 +83,6 @@ class AccountMove(models.Model):
             move.datev_document_uploaded_at = fields.Datetime.now()
             _logger.info(
                 "DATEV Belegbild uploaded: move %s → GUID %s",
-                move.name, move.datev_document_guid,
+                move.name,
+                move.datev_document_guid,
             )
