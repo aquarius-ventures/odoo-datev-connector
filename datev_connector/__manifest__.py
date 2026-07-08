@@ -9,7 +9,9 @@
     "depends": ["base", "mail", "web"],
     "data": [
         "security/ir.model.access.csv",
+        "data/ir_cron.xml",
         "views/datev_token_views.xml",
+        "views/datev_api_log_views.xml",
         "views/res_config_settings_views.xml",
         "views/menu.xml",
     ],

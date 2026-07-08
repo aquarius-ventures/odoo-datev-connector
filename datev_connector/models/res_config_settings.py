@@ -98,32 +98,10 @@ class ResConfigSettings(models.TransientModel):
         self.ensure_one()
         config = self._get_datev_config(self.company_id)
 
-        import requests
         from ..services.datev_api import DatevApiService
 
-        env_key = "sandbox" if config.get("sandbox") else "prod"
-        clients_url = {
-            "prod": "https://accounting-clients.api.datev.de/platform/v2/clients",
-            "sandbox": "https://accounting-clients.api.datev.de/platform-sandbox/v2/clients",
-        }[env_key]
-
         service = DatevApiService(self.env, config)
-        access_token = service._get_token()
-
-        resp = requests.get(
-            clients_url,
-            headers={
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json",
-                "X-Datev-Client-Id": config["client_id"],
-            },
-            timeout=30,
-        )
-        if not resp.ok:
-            raise UserError(_("DATEV clients fetch failed: %s") % resp.text)
-
-        data = resp.json()
-        items = data if isinstance(data, list) else data.get("data", data.get("clients", []))
+        items = service.accounting_clients_list()
         if not items:
             raise UserError(_("No DATEV clients found. Please check your API product subscription."))
 

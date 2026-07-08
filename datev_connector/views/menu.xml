@@ -15,4 +15,20 @@
         action="action_datev_token"
         sequence="10"
     />
+
+    <menuitem
+        id="menu_datev_technic"
+        name="Technik"
+        parent="menu_datev_root"
+        sequence="90"
+        groups="base.group_system"
+    />
+
+    <menuitem
+        id="menu_datev_api_log"
+        name="API Log"
+        parent="menu_datev_technic"
+        action="action_datev_api_log"
+        sequence="10"
+    />
 </odoo>

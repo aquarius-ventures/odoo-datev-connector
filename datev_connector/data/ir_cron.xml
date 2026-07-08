@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- DATEV requires >= 14 days retention; the vacuum deletes only entries
+         older than 30 days. -->
+    <record id="ir_cron_datev_api_log_vacuum" model="ir.cron">
+        <field name="name">DATEV: Alte API-Logs löschen (&gt; 30 Tage)</field>
+        <field name="model_id" ref="datev_connector.model_datev_api_log" />
+        <field name="state">code</field>
+        <field name="code">model._cron_vacuum()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="active">True</field>
+        <field name="doall">False</field>
+    </record>
+</odoo>

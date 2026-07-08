@@ -56,33 +56,94 @@ class TestDatevApiService(TransactionCase):
         self.assertIsNone(Flow._consume(params["state"]))
         self.assertIsNone(Flow._consume("unknown-state-1234567890"))
 
-    @patch("odoo.addons.datev_connector.services.datev_api.requests.post")
-    def test_exchange_code_calls_token_endpoint(self, mock_post):
-        mock_post.return_value = MagicMock(
-            status_code=200, ok=True,
-            json=MagicMock(return_value={
-                "access_token": "acc",
-                "refresh_token": "ref",
-                "expires_in": 3600,
-            }),
-        )
+    @staticmethod
+    def _mock_response(status_code=200, json_data=None, headers=None, text=""):
+        resp = MagicMock()
+        resp.status_code = status_code
+        resp.ok = status_code < 400
+        resp.headers = headers or {}
+        resp.text = text
+        resp.json.return_value = json_data or {}
+        resp.request.url = "https://mocked.example/url"
+        return resp
+
+    @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
+    def test_exchange_code_calls_token_endpoint(self, mock_request):
+        mock_request.return_value = self._mock_response(json_data={
+            "access_token": "acc",
+            "refresh_token": "ref",
+            "expires_in": 3600,
+        })
         service = self._make_service()
         result = service.exchange_code("authcode", "test-verifier")
         self.assertEqual(result["access_token"], "acc")
-        mock_post.assert_called_once()
-        _, kwargs = mock_post.call_args
+        mock_request.assert_called_once()
+        args, kwargs = mock_request.call_args
+        self.assertEqual(args[0], "POST")
         self.assertEqual(kwargs["data"]["code_verifier"], "test-verifier")
         self.assertEqual(kwargs["auth"], ("test-client-id", "test-client-secret"))
 
-    @patch("odoo.addons.datev_connector.services.datev_api.requests.post")
-    def test_revoke_token_sends_hint(self, mock_post):
-        mock_post.return_value = MagicMock(status_code=200, ok=True)
+    @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
+    def test_revoke_token_sends_hint(self, mock_request):
+        mock_request.return_value = self._mock_response()
         service = self._make_service()
         self.assertTrue(service.revoke_token("some-token", "refresh_token"))
-        args, kwargs = mock_post.call_args
-        self.assertIn("revoke", args[0])
+        args, kwargs = mock_request.call_args
+        self.assertEqual(args[0], "POST")
+        self.assertIn("revoke", args[1])
         self.assertEqual(kwargs["data"]["token_type_hint"], "refresh_token")
         self.assertEqual(kwargs["data"]["token"], "some-token")
+
+    @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
+    def test_http_writes_redacted_log(self, mock_request):
+        mock_request.return_value = self._mock_response(
+            headers={
+                "X-Global-Transaction-ID": "gtid-1",
+                "V-Cap-Request-ID": "vcap-1",
+            },
+        )
+        service = self._make_service()
+        before = self.env["datev.api.log"].search_count([])
+        service._http(
+            "GET", "https://api.datev.de/test",
+            headers={"Authorization": "Bearer SECRET-TOKEN", "Accept": "application/json"},
+        )
+        logs = self.env["datev.api.log"].search([], order="id desc", limit=1)
+        self.assertEqual(self.env["datev.api.log"].search_count([]), before + 1)
+        self.assertEqual(logs.method, "GET")
+        self.assertEqual(logs.x_global_transaction_id, "gtid-1")
+        self.assertEqual(logs.v_cap_request_id, "vcap-1")
+        self.assertNotIn("SECRET-TOKEN", logs.request_headers)
+        self.assertIn("<redacted>", logs.request_headers)
+        # 200 without log_body: response body must NOT be stored
+        self.assertFalse(logs.response_body)
+
+    @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
+    def test_4xx_error_shows_problem_json_details(self, mock_request):
+        from odoo.exceptions import UserError
+
+        mock_request.return_value = self._mock_response(
+            status_code=403,
+            json_data={
+                "title": "Forbidden",
+                "detail": "Dem Mandanten fehlt der Buchungsdatenservice.",
+                "instance": "https://apps.datev.de/help-center/xyz",
+            },
+        )
+        from datetime import datetime, timedelta
+        self.env["datev.token"].create({
+            "company_id": self.env.company.id,
+            "access_token": "test-at",
+            "token_expiry": datetime.utcnow() + timedelta(hours=1),
+            "state": "connected",
+        })
+        service = self._make_service()
+        with self.assertRaises(UserError) as ctx:
+            service._request("GET", "https://api.datev.de/test", extra_headers={})
+        msg = str(ctx.exception)
+        self.assertIn("Forbidden", msg)
+        self.assertIn("Buchungsdatenservice", msg)
+        self.assertIn("https://apps.datev.de/help-center/xyz", msg)
 
     def test_scope_respects_service_selection(self):
         company = self.env.company

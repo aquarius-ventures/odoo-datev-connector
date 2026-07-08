@@ -3,11 +3,14 @@ import hashlib
 import logging
 import secrets
 import urllib.parse
+from datetime import datetime
 from typing import Any, Dict, Optional
 
 import requests
 from requests import Response
 
+from odoo import SUPERUSER_ID
+from odoo import api as odoo_api
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -43,6 +46,13 @@ _HR_EXCHANGE_API_BASE = {
     "prod": "https://hr-exchange.api.datev.de/platform/v1",
     "sandbox": "https://hr-exchange.api.datev.de/platform-sandbox/v1",
 }
+_ACCT_CLIENTS_BASE = {
+    "prod": "https://accounting-clients.api.datev.de/platform/v2",
+    "sandbox": "https://accounting-clients.api.datev.de/platform-sandbox/v2",
+}
+
+# Request headers that must never appear in the technical log.
+_REDACTED_HEADERS = ("authorization", "x-datev-client-secret")
 
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
 
@@ -65,6 +75,114 @@ class DatevApiService:
         self._env_key = "sandbox" if config.get("sandbox") else "prod"
         # Company whose DATEV token should be used (per-company connections).
         self._company_id = config.get("company_id") or env.company.id
+
+    # ------------------------------------------------------------------
+    # HTTP choke point + technical log (DATEV MUST, P1.1)
+    # ------------------------------------------------------------------
+
+    def _http(self, method: str, url: str, *, headers=None, params=None,
+              data=None, json=None, auth=None, timeout=60, log_body=False) -> Response:
+        """Single choke point for ALL HTTP communication with the DATEV API
+        gateway. Every request/response pair is written to datev.api.log.
+        ``log_body=True`` stores the response body also for non-error responses
+        (required for status queries)."""
+        request_ts = datetime.utcnow()
+        if params:
+            full_url = url + ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
+        else:
+            full_url = url
+        try:
+            resp = requests.request(
+                method, url,
+                headers=headers, params=params, data=data, json=json,
+                auth=auth, timeout=timeout,
+            )
+        except requests.RequestException as exc:
+            self._log_api_call(method, full_url, headers, error=str(exc), request_ts=request_ts)
+            raise
+        try:
+            logged_url = resp.request.url or full_url
+        except Exception:
+            logged_url = full_url
+        self._log_api_call(
+            method, logged_url, headers,
+            resp=resp, request_ts=request_ts, response_ts=datetime.utcnow(),
+            log_body=log_body,
+        )
+        return resp
+
+    def _log_api_call(self, method, url, headers, resp=None, error=None,
+                      request_ts=None, response_ts=None, log_body=False):
+        """Write one datev.api.log row in its own transaction so log entries
+        survive a rollback of the business transaction. Never raises."""
+        try:
+            redacted = {
+                str(k): ("<redacted>" if str(k).lower() in _REDACTED_HEADERS else str(v))
+                for k, v in (headers or {}).items()
+            }
+            vals = {
+                "request_ts": request_ts or datetime.utcnow(),
+                "method": str(method),
+                "url": str(url)[:2000],
+                "request_headers": "\n".join(f"{k}: {v}" for k, v in redacted.items()),
+                "company_id": self._company_id,
+            }
+            if resp is not None:
+                status_code = int(resp.status_code)
+                vals.update({
+                    "response_ts": response_ts or datetime.utcnow(),
+                    "status_code": status_code,
+                    "x_global_transaction_id":
+                        str(resp.headers.get("X-Global-Transaction-ID") or ""),
+                    "v_cap_request_id": str(resp.headers.get("V-Cap-Request-ID") or ""),
+                })
+                if log_body or status_code >= 400:
+                    vals["response_body"] = str(resp.text)[:8000]
+            if error:
+                vals["error"] = str(error)[:500]
+            with self._env.registry.cursor() as cr:
+                env = odoo_api.Environment(cr, SUPERUSER_ID, {})
+                env["datev.api.log"].create(vals)
+        except Exception:
+            _logger.exception("DATEV: failed to write API log entry")
+
+    @staticmethod
+    def _format_http_error(resp) -> str:
+        """Build a user-facing message from an error response.
+
+        DATEV answers 4XX with RFC 9457 application/problem+json; title,
+        detail and any contained help URLs must be shown to the user (MUST).
+        Never includes tokens or secrets."""
+        try:
+            body = resp.json()
+        except Exception:
+            body = None
+        if not isinstance(body, dict):
+            return (resp.text or "")[:500]
+        parts = []
+        title = body.get("title") or body.get("error")
+        detail = body.get("detail") or body.get("error_description")
+        if title:
+            parts.append(str(title))
+        if detail and detail != title:
+            parts.append(str(detail))
+
+        urls = set()
+
+        def _collect_urls(node):
+            if isinstance(node, dict):
+                for value in node.values():
+                    _collect_urls(value)
+            elif isinstance(node, list):
+                for value in node:
+                    _collect_urls(value)
+            elif isinstance(node, str) and node.startswith(("http://", "https://")):
+                urls.add(node)
+
+        _collect_urls(body)
+        if urls:
+            parts.append("Hilfe: " + " | ".join(sorted(urls)))
+        return " — ".join(parts) if parts else str(body)[:500]
 
     # ------------------------------------------------------------------
     # OAuth2 + PKCE helpers
@@ -156,8 +274,8 @@ class DatevApiService:
         """
         url = _OAUTH_BASE[self._env_key]["revoke"]
         try:
-            resp = requests.post(
-                url,
+            resp = self._http(
+                "POST", url,
                 data={"token": token, "token_type_hint": token_type_hint},
                 auth=(self._client_id, self._client_secret),
                 timeout=30,
@@ -176,8 +294,8 @@ class DatevApiService:
         """Fetch the OIDC userinfo for the person who issued the token."""
         url = _OAUTH_BASE[self._env_key]["userinfo"]
         try:
-            resp = requests.get(
-                url,
+            resp = self._http(
+                "GET", url,
                 headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
                 timeout=30,
             )
@@ -193,8 +311,8 @@ class DatevApiService:
         # not in the POST body (client_secret_post).
         url = _OAUTH_BASE[self._env_key]["token"]
         try:
-            resp = requests.post(
-                url,
+            resp = self._http(
+                "POST", url,
                 data=payload,
                 auth=(self._client_id, self._client_secret),
                 timeout=30,
@@ -202,13 +320,8 @@ class DatevApiService:
         except requests.RequestException as exc:
             raise UserError(f"DATEV token request failed: {exc}") from exc
         if not resp.ok:
-            _logger.error("DATEV token error %s: %s", resp.status_code, resp.text)
-            detail = resp.text
-            try:
-                body = resp.json()
-                detail = body.get("error_description") or body.get("error") or detail
-            except Exception:
-                pass
+            detail = self._format_http_error(resp)
+            _logger.error("DATEV token error %s: %s", resp.status_code, detail)
             raise UserError(
                 f"DATEV token request failed ({resp.status_code}): {detail}"
             )
@@ -256,29 +369,27 @@ class DatevApiService:
         json: Optional[Dict] = None,
         data: Any = None,
         extra_headers: Optional[Dict] = None,
+        log_body: bool = False,
     ) -> Response:
         try:
-            resp = requests.request(
-                method,
-                url,
+            resp = self._http(
+                method, url,
                 headers=self._headers(extra_headers),
-                params=params,
-                json=json,
-                data=data,
-                timeout=60,
+                params=params, json=json, data=data,
+                log_body=log_body,
             )
-            resp.raise_for_status()
-            return resp
-        except requests.HTTPError as exc:
-            body = ""
-            try:
-                body = exc.response.json()
-            except Exception:
-                body = exc.response.text
-            _logger.error("DATEV API %s %s → %s: %s", method, url, exc.response.status_code, body)
-            raise UserError(f"DATEV API error {exc.response.status_code}: {body}") from exc
         except requests.RequestException as exc:
             raise UserError(f"DATEV connection error: {exc}") from exc
+        if not resp.ok:
+            detail = self._format_http_error(resp)
+            _logger.error("DATEV API %s %s → %s: %s", method, url, resp.status_code, detail)
+            if resp.status_code == 401:
+                raise UserError(
+                    "DATEV: Anmeldung ungültig oder abgelaufen — bitte neu mit "
+                    "DATEV verbinden. (%s)" % detail
+                )
+            raise UserError(f"DATEV API error {resp.status_code}: {detail}")
+        return resp
 
     def extf_job_status(self, job_url: str) -> dict:
         """Poll the status of an async EXTF import job.
@@ -288,21 +399,30 @@ class DatevApiService:
         On failure, '_errors' contains a list of error strings.
         """
         try:
-            resp = requests.get(
-                job_url,
+            resp = self._http(
+                "GET", job_url,
                 headers={
                     "Authorization": f"Bearer {self._get_token()}",
                     "X-DATEV-Client-Id": self._client_id,
                     "Accept": "application/json;charset=utf-8",
                 },
                 timeout=30,
+                log_body=True,  # status query: body must be logged
             )
             _logger.info("DATEV job status %s → %s: %s", job_url, resp.status_code, resp.text)
         except requests.RequestException as exc:
             _logger.warning("DATEV job status poll failed: %s", exc)
             return {"_result": "error", "_errors": [str(exc)]}
 
-        if resp.status_code in (202, 404):
+        if resp.status_code == 404:
+            # A 404 on a known job URL is unusual — flag it in the log, but the
+            # poll-timeout in the caller prevents endless pending states.
+            _logger.warning(
+                "DATEV EXTF job status 404 for %s — treated as pending "
+                "(Auffälligkeit, siehe datev.api.log).", job_url,
+            )
+            return {"_result": "pending"}
+        if resp.status_code == 202:
             return {"_result": "pending"}
         if not resp.ok:
             return {"_result": "error", "_errors": [f"HTTP {resp.status_code}: {resp.text[:200]}"]}
@@ -398,7 +518,11 @@ class DatevApiService:
     def hr_exchange_job_status(self, client_id: str, job_uuid: str) -> dict:
         """Poll the state of a hr:exchange async job."""
         url = _HR_EXCHANGE_API_BASE[self._env_key] + f"/clients/{client_id}/jobs/{job_uuid}"
-        resp = self._request("GET", url, extra_headers={"X-DATEV-Client-Id": self._client_id})
+        resp = self._request(
+            "GET", url,
+            extra_headers={"X-DATEV-Client-Id": self._client_id},
+            log_body=True,  # status query: body must be logged
+        )
         return resp.json()
 
     # ------------------------------------------------------------------
@@ -411,47 +535,55 @@ class DatevApiService:
         if not reference_id:
             import uuid
             reference_id = str(uuid.uuid4())
-        request_headers = {
-            "Authorization": "Bearer <token>",
+        headers = {
+            "Authorization": f"Bearer {self._get_token()}",
             "X-DATEV-Client-Id": self._client_id,
-            "X-DATEV-Client-Secret": "<secret>",
+            "X-DATEV-Client-Secret": self._client_secret,
             "Accept": "application/json;charset=utf-8",
             "Content-Type": "application/octet-stream",
             "Filename": filename,
             "Reference-Id": reference_id,
             "Client-Application-Version": "1.0",
         }
-        first_line = csv_bytes.split(b"\n")[0].decode("utf-8", errors="replace")
         _logger.info(
-            "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes | first_line: %r",
-            url, filename, reference_id, len(csv_bytes), first_line,
+            "DATEV EXTF import → POST %s | Filename: %s | Reference-Id: %s | payload: %d bytes",
+            url, filename, reference_id, len(csv_bytes),
         )
-        token = self._get_token()
         try:
-            resp = requests.post(
-                url,
-                data=csv_bytes,
-                headers={
-                    **request_headers,
-                    "Authorization": f"Bearer {token}",
-                    "X-DATEV-Client-Secret": self._client_secret,
-                },
-                timeout=60,
-            )
-            _logger.info(
-                "DATEV EXTF import response: %s | headers: %s | body: %s",
-                resp.status_code, dict(resp.headers), resp.text[:500],
-            )
-            if not resp.ok:
-                _logger.error("DATEV EXTF import FAILED %s → %s: %s", url, resp.status_code, resp.text)
-            resp.raise_for_status()
-            return resp
-        except requests.HTTPError as exc:
-            body = ""
-            try:
-                body = exc.response.json()
-            except Exception:
-                body = exc.response.text
-            raise UserError(f"DATEV EXTF upload error {exc.response.status_code}: {body}") from exc
+            resp = self._http("POST", url, headers=headers, data=csv_bytes, timeout=60)
         except requests.RequestException as exc:
             raise UserError(f"DATEV connection error: {exc}") from exc
+        if not resp.ok:
+            detail = self._format_http_error(resp)
+            _logger.error("DATEV EXTF import FAILED %s → %s: %s", url, resp.status_code, detail)
+            raise UserError(f"DATEV EXTF upload error {resp.status_code}: {detail}")
+        return resp
+
+    # ------------------------------------------------------------------
+    # accounting:clients (Mandanten-/Berechtigungsprüfung)
+    # ------------------------------------------------------------------
+
+    def accounting_clients_list(self, top: int = 100, skip: int = 0) -> list:
+        """List clients the token may access (paged, max 100 per page)."""
+        url = _ACCT_CLIENTS_BASE[self._env_key] + "/clients"
+        resp = self._request(
+            "GET", url,
+            params={"top": top, "skip": skip},
+            extra_headers={"X-DATEV-Client-Id": self._client_id},
+            log_body=True,
+        )
+        data = resp.json()
+        if isinstance(data, list):
+            return data
+        return data.get("data", data.get("clients", []))
+
+    def accounting_clients_get(self, client_id: str) -> dict:
+        """Authorization check for the Buchungsdatenservice (MUST before
+        transfer): GET /clients/{consultant}-{client} incl. its services."""
+        url = _ACCT_CLIENTS_BASE[self._env_key] + f"/clients/{client_id}"
+        resp = self._request(
+            "GET", url,
+            extra_headers={"X-DATEV-Client-Id": self._client_id},
+            log_body=True,
+        )
+        return resp.json()
