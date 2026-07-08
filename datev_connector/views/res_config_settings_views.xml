@@ -79,6 +79,11 @@
                         <setting string="Client Secret" name="datev_client_secret_setting">
                             <field name="datev_client_secret" password="True" />
                         </setting>
+                        <setting string="Redirect-URL" name="datev_redirect_uri_setting"
+                                 help="Muss im DATEV Developer Portal exakt so registriert sein.
+                                       Produktiv: nur HTTPS, kein localhost, keine IP-Adressen.">
+                            <field name="datev_redirect_uri" readonly="1" />
+                        </setting>
                         <setting string="Consultant Number (client-id)" name="datev_consultant_number_setting"
                                  help="Erster Teil der DATEV client-id (Beraternummer des Mandanten, bis zu 7 Stellen).
                                        Das ist NICHT zwingend Ihre Login-Beraternummer, sondern der Wert, den DATEV für

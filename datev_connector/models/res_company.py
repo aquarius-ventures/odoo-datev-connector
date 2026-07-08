@@ -7,8 +7,18 @@ class ResCompany(models.Model):
 
     # DATEV connection settings — per company, so one Odoo instance can talk to
     # several DATEV clients (Mandanten), one per company.
-    datev_client_id = fields.Char(string="DATEV Client ID")
-    datev_client_secret = fields.Char(string="DATEV Client Secret")
+    # Field-level protection (DATEV MUST/DONT on sensitive data): the client
+    # secret must never be readable by regular internal users via ORM reads.
+    # Encryption at rest is provided by the hosting layer (odoo.sh volume
+    # encryption); see dev/RELEASE_MEETING_NOTES.md.
+    datev_client_id = fields.Char(
+        string="DATEV Client ID",
+        groups="base.group_system",
+    )
+    datev_client_secret = fields.Char(
+        string="DATEV Client Secret",
+        groups="base.group_system",
+    )
     datev_sandbox_mode = fields.Boolean(string="DATEV Sandbox Mode")
     datev_consultant_number = fields.Char(string="DATEV Consultant Number")
     datev_client_number = fields.Char(string="DATEV Client Number")

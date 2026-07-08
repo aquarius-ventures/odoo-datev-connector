@@ -12,9 +12,11 @@ class ResConfigSettings(models.TransientModel):
     # Per-company DATEV settings (stored on res.company).
     datev_client_id = fields.Char(
         related="company_id.datev_client_id", readonly=False,
+        groups="base.group_system",
     )
     datev_client_secret = fields.Char(
         related="company_id.datev_client_secret", readonly=False,
+        groups="base.group_system",
     )
     datev_sandbox_mode = fields.Boolean(
         related="company_id.datev_sandbox_mode", readonly=False,
@@ -67,6 +69,48 @@ class ResConfigSettings(models.TransientModel):
         compute="_compute_datev_token_info",
     )
 
+    datev_redirect_uri = fields.Char(
+        string="OAuth Redirect-URL",
+        compute="_compute_datev_redirect_uri",
+        help="Diese URL muss im DATEV Developer Portal exakt so als "
+             "Redirect-URL der App registriert sein.",
+    )
+
+    def _compute_datev_redirect_uri(self):
+        from ..services.datev_api import _OAUTH_CALLBACK_PATH
+
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url", "")
+        for rec in self:
+            rec.datev_redirect_uri = base_url + _OAUTH_CALLBACK_PATH
+
+    @api.model
+    def _datev_check_redirect_url(self, sandbox):
+        """Enforce the DATEV redirect-URL guidelines for confidential clients
+        in production: HTTPS only, no localhost, no raw IPs, no custom schemes.
+        Apps with non-compliant redirect URLs are blocked by DATEV from
+        2026-03-01 on."""
+        import ipaddress
+        import urllib.parse as up
+
+        if sandbox:
+            return
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url", "")
+        parsed = up.urlparse(base_url)
+        host = parsed.hostname or ""
+        is_ip = False
+        try:
+            ipaddress.ip_address(host)
+            is_ip = True
+        except ValueError:
+            pass
+        if parsed.scheme != "https" or host in ("localhost", "127.0.0.1") or is_ip:
+            raise UserError(_(
+                "DATEV Produktivbetrieb: Die Redirect-URL muss HTTPS sein und darf "
+                "weder localhost noch eine IP-Adresse enthalten (aktuelle Basis-URL: %s). "
+                "Apps mit unzulässigen Redirect-URLs werden von DATEV seit 01.03.2026 "
+                "gesperrt. Bitte 'web.base.url' auf die öffentliche HTTPS-Domain stellen."
+            ) % (base_url or "<leer>"))
+
     @api.depends("company_id", "datev_client_id")
     def _compute_datev_connection_state(self):
         for rec in self:
@@ -94,7 +138,10 @@ class ResConfigSettings(models.TransientModel):
 
     @api.model
     def _get_datev_config(self, company=None):
-        company = company or self.env.company
+        company = (company or self.env.company).sudo()
+        # sudo: credentials are group-restricted (base.group_system), but the
+        # API service must also work for e.g. accountants triggering an export
+        # or HR users triggering a sync — without exposing the fields to them.
         return {
             "client_id": company.datev_client_id or "",
             "client_secret": company.datev_client_secret or "",
@@ -107,6 +154,7 @@ class ResConfigSettings(models.TransientModel):
         config = self._get_datev_config(self.company_id)
         if not config["client_id"] or not config["client_secret"]:
             raise UserError(_("Please enter your DATEV Client ID and Client Secret first."))
+        self._datev_check_redirect_url(config["sandbox"])
         # Clear any previous error at the start of a fresh connection attempt.
         self.company_id.sudo().datev_last_error = False
 
