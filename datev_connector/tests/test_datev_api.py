@@ -104,21 +104,29 @@ class TestDatevApiService(TransactionCase):
             },
         )
         service = self._make_service()
-        before = self.env["datev.api.log"].search_count([])
         service._http(
             "GET",
             "https://api.datev.de/test",
             headers={"Authorization": "Bearer SECRET-TOKEN", "Accept": "application/json"},
         )
-        logs = self.env["datev.api.log"].search([], order="id desc", limit=1)
-        self.assertEqual(self.env["datev.api.log"].search_count([]), before + 1)
-        self.assertEqual(logs.method, "GET")
-        self.assertEqual(logs.x_global_transaction_id, "gtid-1")
-        self.assertEqual(logs.v_cap_request_id, "vcap-1")
-        self.assertNotIn("SECRET-TOKEN", logs.request_headers)
-        self.assertIn("<redacted>", logs.request_headers)
-        # 200 without log_body: response body must NOT be stored
-        self.assertFalse(logs.response_body)
+        # The log entry is committed in its own transaction (so it survives
+        # business rollbacks) — it is therefore invisible to this test's
+        # repeatable-read snapshot and must be checked via a fresh cursor.
+        from odoo import SUPERUSER_ID, api
+
+        with self.env.registry.cursor() as cr:
+            env2 = api.Environment(cr, SUPERUSER_ID, {})
+            logs = env2["datev.api.log"].search([("url", "like", "api.datev.de/test")], order="id desc", limit=1)
+            self.assertTrue(logs, "no datev.api.log entry was written")
+            self.assertEqual(logs.method, "GET")
+            self.assertEqual(logs.x_global_transaction_id, "gtid-1")
+            self.assertEqual(logs.v_cap_request_id, "vcap-1")
+            self.assertNotIn("SECRET-TOKEN", logs.request_headers)
+            self.assertIn("<redacted>", logs.request_headers)
+            # 200 without log_body: response body must NOT be stored
+            self.assertFalse(logs.response_body)
+            # clean up the committed row so the test leaves no trace
+            logs.unlink()
 
     @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
     def test_4xx_error_shows_problem_json_details(self, mock_request):
