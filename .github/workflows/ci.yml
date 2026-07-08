@@ -72,11 +72,17 @@ jobs:
             -i datev_connector,datev_connector_accounting,datev_connector_hr \
             --stop-after-init --no-http
 
+      # pytest-odoo connects as the OS user regardless of PGUSER/config, so a
+      # matching superuser role is the robust fix.
+      - name: Create PG role for runner user
+        run: |
+          PGPASSWORD=odoo psql -h localhost -U odoo -d odoo_test \
+            -c "CREATE ROLE runner LOGIN SUPERUSER PASSWORD 'odoo'"
+
       - name: Run tests
         env:
-          # odoo.tools.config reads ODOO_RC at import time — the reliable way
-          # to hand DB credentials to pytest-odoo.
           ODOO_RC: /tmp/odoo-ci.conf
+          PGPASSWORD: odoo
         run: |
           printf '[options]\ndb_host = localhost\ndb_port = 5432\ndb_user = odoo\ndb_password = odoo\naddons_path = /tmp/odoo/addons,.\n' > /tmp/odoo-ci.conf
           python -m pytest \
