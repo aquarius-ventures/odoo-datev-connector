@@ -167,14 +167,14 @@
                                 type="object"
                                 string="Mandanten abrufen"
                                 class="btn-secondary"
-                                invisible="datev_connection_state == 'disconnected'"
+                                invisible="datev_connection_state == 'disconnected' or not datev_service_accounting"
                             />
                             <button
                                 name="action_datev_check_client"
                                 type="object"
                                 string="Mandant prüfen"
                                 class="btn-secondary"
-                                invisible="datev_connection_state == 'disconnected'"
+                                invisible="datev_connection_state == 'disconnected' or not datev_service_accounting"
                             />
                             <div
                                 class="text-muted"

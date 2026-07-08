@@ -42,6 +42,10 @@ class DatevOAuthController(http.Controller):
             company.datev_last_error = str(exc)[:500]
             return request.redirect(self._SETTINGS_URL)
 
+        # RFC 6749 §5.1: the token response omits 'scope' when it is identical
+        # to the requested scope — fall back so the mandatory scope display in
+        # the settings is never empty.
+        token_data.setdefault("scope", service.get_scope())
         # sudo: the connecting user is not necessarily in base.group_system,
         # but the token record itself must never be user-writable directly.
         token = request.env["datev.token"].sudo()._get_or_create(company.id)

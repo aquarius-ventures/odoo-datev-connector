@@ -26,7 +26,7 @@
                         type="object"
                         string="Verbindung prüfen (Belegbilder)"
                         class="btn-secondary"
-                        invisible="datev_connection_state == 'disconnected'"
+                        invisible="datev_connection_state == 'disconnected' or not datev_service_documents"
                     />
                 </setting>
             </xpath>

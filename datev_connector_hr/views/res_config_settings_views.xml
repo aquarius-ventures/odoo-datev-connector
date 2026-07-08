@@ -17,7 +17,7 @@
                     type="object"
                     string="Verbindung prüfen (hr:exchange)"
                     class="btn-secondary"
-                    invisible="datev_connection_state == 'disconnected'"
+                    invisible="datev_connection_state == 'disconnected' or not datev_service_hr"
                 />
             </xpath>
         </field>
