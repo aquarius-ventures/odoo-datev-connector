@@ -63,7 +63,9 @@ class TestDatevApiService(TransactionCase):
         resp.headers = headers or {}
         resp.text = text
         resp.json.return_value = json_data or {}
-        resp.request.url = "https://mocked.example/url"
+        # _http logs resp.request.url when set; None makes it fall back to the
+        # actually requested URL, which is what the log should contain.
+        resp.request.url = None
         return resp
 
     @patch("odoo.addons.datev_connector.services.datev_api.requests.request")
