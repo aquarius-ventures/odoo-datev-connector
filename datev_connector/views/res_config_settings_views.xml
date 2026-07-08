@@ -28,6 +28,21 @@
                         </setting>
                     </block>
 
+                    <block title="Datenservices" name="datev_services_block"
+                           help="Wählen Sie aktiv aus, welche DATEV Datenservices diese Firma nutzt.
+                                 Es werden nur die dafür nötigen Scopes bei DATEV angefragt.
+                                 Der jeweilige Datenservice muss beim Steuerberater bzw. DATEV
+                                 bestellt und aktiviert sein: http://go.datev.de/datenservices-einrichten">
+                        <setting string="DATEV Buchungsdatenservice" name="datev_service_accounting_setting"
+                                 help="Übertragung von Buchungsdaten (EXTF). Benötigt das Modul DATEV Cloud Connector - Accounting.">
+                            <field name="datev_service_accounting" />
+                        </setting>
+                        <setting string="DATEV Lohnaustauschdatenservice (hr:exchange)" name="datev_service_hr_setting"
+                                 help="Übertragung von Personalstammdaten. Benötigt das Modul DATEV Cloud Connector - HR.">
+                            <field name="datev_service_hr" />
+                        </setting>
+                    </block>
+
                     <block title="Credentials" name="datev_credentials_block">
                         <setting string="Client ID" name="datev_client_id_setting">
                             <field name="datev_client_id" />

@@ -22,6 +22,38 @@ class ResCompany(models.Model):
         readonly=True,
         help="Last error from the DATEV OAuth flow. Cleared on a successful connect.",
     )
+    # Active data-service selection (DATEV MUST: only request the scopes the
+    # customer needs, and the customer must actively choose the services).
+    datev_service_accounting = fields.Boolean(
+        string="DATEV Buchungsdatenservice",
+        help="Fragt die Scopes datev:accounting:extf-files-import und "
+             "datev:accounting:clients an. Der Buchungsdatenservice muss beim "
+             "Steuerberater/DATEV bestellt und aktiviert sein: "
+             "http://go.datev.de/datenservices-einrichten",
+    )
+    datev_service_hr = fields.Boolean(
+        string="DATEV Lohnaustauschdatenservice (hr:exchange)",
+        help="Fragt den Scope datev:hr:payrolldataexchange an. Der "
+             "Lohnaustauschdatenservice muss beim Steuerberater/DATEV bestellt "
+             "und aktiviert sein: http://go.datev.de/datenservices-einrichten",
+    )
+
+    def _datev_module_installed(self, name):
+        return bool(
+            self.env["ir.module.module"].sudo().search_count(
+                [("name", "=", name), ("state", "=", "installed")]
+            )
+        )
+
+    def datev_get_service_accounting(self):
+        self.ensure_one()
+        return self.datev_service_accounting and self._datev_module_installed(
+            "datev_connector_accounting"
+        )
+
+    def datev_get_service_hr(self):
+        self.ensure_one()
+        return self.datev_service_hr and self._datev_module_installed("datev_connector_hr")
 
     def datev_get_client_id(self):
         """Return the DATEV client-id ('consultant-client') for this company."""

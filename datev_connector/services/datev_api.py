@@ -19,10 +19,14 @@ _OAUTH_BASE = {
     "prod": {
         "auth": "https://login.datev.de/openid/authorize",
         "token": "https://api.datev.de/token",
+        "revoke": "https://api.datev.de/revoke",
+        "userinfo": "https://api.datev.de/userinfo",
     },
     "sandbox": {
         "auth": "https://login.datev.de/openidsandbox/authorize",
         "token": "https://sandbox-api.datev.de/token",
+        "revoke": "https://sandbox-api.datev.de/revoke",
+        "userinfo": "https://sandbox-api.datev.de/userinfo",
     },
 }
 
@@ -41,14 +45,6 @@ _HR_EXCHANGE_API_BASE = {
 }
 
 _OAUTH_CALLBACK_PATH = "/web/datev/oauth/callback"
-_STATE_PARAM_KEY = "datev_oauth_state"
-_PKCE_VERIFIER_KEY = "datev_oauth_pkce_verifier"
-_SCOPE = (
-    "openid profile "
-    "datev:accounting:extf-files-import "
-    "datev:accounting:clients "
-    "datev:hr:payrolldataexchange"
-)
 
 
 def _pkce_pair():
@@ -77,46 +73,120 @@ class DatevApiService:
     def _get_base_url(self) -> str:
         return self._env["ir.config_parameter"].sudo().get_param("web.base.url", "")
 
+    def get_scope(self) -> str:
+        """Scope string limited to the DATEV data services actually in use
+        (MUST: only request scopes the customer needs)."""
+        scopes = ["openid", "profile"]
+        company = self._env["res.company"].sudo().browse(self._company_id)
+        if company.datev_get_service_accounting():
+            scopes += ["datev:accounting:extf-files-import", "datev:accounting:clients"]
+        if company.datev_get_service_hr():
+            scopes.append("datev:hr:payrolldataexchange")
+        return " ".join(scopes)
+
     def get_authorization_url(self) -> str:
+        # state and nonce: DATEV requires >= 20 chars each, new per request.
         state = secrets.token_urlsafe(24)
+        nonce = secrets.token_urlsafe(24)
         verifier, challenge = _pkce_pair()
-        ICP = self._env["ir.config_parameter"].sudo()
-        ICP.set_param(_STATE_PARAM_KEY, state)
-        ICP.set_param(_PKCE_VERIFIER_KEY, verifier)
+        self._env["datev.oauth.flow"]._begin(state, nonce, verifier, self._company_id)
         redirect_uri = self._get_base_url() + _OAUTH_CALLBACK_PATH
         params = {
             "response_type": "code",
             "client_id": self._client_id,
             "redirect_uri": redirect_uri,
-            "scope": _SCOPE,
+            "scope": self.get_scope(),
             "state": state,
+            "nonce": nonce,
             "code_challenge": challenge,
             "code_challenge_method": "S256",
+            # Recommended by the DATEV auth guide (Windows SSO with DATEV login).
+            "enableWindowsSso": "true",
         }
         return _OAUTH_BASE[self._env_key]["auth"] + "?" + urllib.parse.urlencode(params)
 
-    def exchange_code(self, code: str, state: str) -> dict:
-        ICP = self._env["ir.config_parameter"].sudo()
-        expected_state = ICP.get_param(_STATE_PARAM_KEY)
-        if not secrets.compare_digest(state or "", expected_state or ""):
-            raise UserError("DATEV OAuth2: Invalid state parameter.")
-        verifier = ICP.get_param(_PKCE_VERIFIER_KEY)
-        if not verifier:
-            raise UserError("DATEV OAuth2: PKCE verifier missing. Please restart the OAuth flow.")
+    def exchange_code(self, code: str, code_verifier: str, nonce: str = "") -> dict:
+        """Redeem an authorization code. State validation and PKCE-verifier
+        lookup happen in the caller via datev.oauth.flow (single-use)."""
         redirect_uri = self._get_base_url() + _OAUTH_CALLBACK_PATH
         result = self._token_request(
             {
                 "grant_type": "authorization_code",
                 "code": code,
                 "redirect_uri": redirect_uri,
-                "code_verifier": verifier,
+                "code_verifier": code_verifier,
             }
         )
-        ICP.set_param(_PKCE_VERIFIER_KEY, "")
+        if nonce:
+            self._verify_id_token_nonce(result, nonce)
         return result
+
+    @staticmethod
+    def _verify_id_token_nonce(token_data: dict, expected_nonce: str):
+        """Check the nonce claim of the ID token against the flow's nonce.
+
+        The payload is decoded without signature verification — this is only
+        the replay-protection check recommended by the DATEV auth guide, the
+        token itself was received over TLS directly from DATEV.
+        """
+        id_token = token_data.get("id_token")
+        if not id_token:
+            return
+        try:
+            import json
+            payload_b64 = id_token.split(".")[1]
+            payload_b64 += "=" * (-len(payload_b64) % 4)
+            claims = json.loads(base64.urlsafe_b64decode(payload_b64))
+        except Exception:
+            _logger.warning("DATEV OAuth: could not decode ID token payload.")
+            return
+        claim_nonce = claims.get("nonce")
+        if claim_nonce and not secrets.compare_digest(claim_nonce, expected_nonce):
+            raise UserError("DATEV OAuth2: ID token nonce mismatch. Please restart the flow.")
 
     def exchange_refresh_token(self, refresh_token: str) -> dict:
         return self._token_request({"grant_type": "refresh_token", "refresh_token": refresh_token})
+
+    def revoke_token(self, token: str, token_type_hint: str) -> bool:
+        """Revoke an access or refresh token at DATEV (RFC 7009).
+
+        ``token_type_hint`` ('access_token' | 'refresh_token') is mandatory at
+        DATEV. Returns True when DATEV confirmed the revocation; failures are
+        logged but never raise — a disconnect must always go through locally.
+        """
+        url = _OAUTH_BASE[self._env_key]["revoke"]
+        try:
+            resp = requests.post(
+                url,
+                data={"token": token, "token_type_hint": token_type_hint},
+                auth=(self._client_id, self._client_secret),
+                timeout=30,
+            )
+        except requests.RequestException as exc:
+            _logger.warning("DATEV revoke (%s) failed: %s", token_type_hint, exc)
+            return False
+        if not resp.ok:
+            _logger.warning(
+                "DATEV revoke (%s) returned %s: %s",
+                token_type_hint, resp.status_code, resp.text[:200],
+            )
+        return resp.ok
+
+    def get_userinfo(self, access_token: str) -> dict:
+        """Fetch the OIDC userinfo for the person who issued the token."""
+        url = _OAUTH_BASE[self._env_key]["userinfo"]
+        try:
+            resp = requests.get(
+                url,
+                headers={"Authorization": f"Bearer {access_token}", "Accept": "application/json"},
+                timeout=30,
+            )
+            if resp.ok:
+                return resp.json()
+            _logger.warning("DATEV userinfo returned %s: %s", resp.status_code, resp.text[:200])
+        except requests.RequestException as exc:
+            _logger.warning("DATEV userinfo failed: %s", exc)
+        return {}
 
     def _token_request(self, payload: dict) -> dict:
         # DATEV requires client_secret_basic: credentials via HTTP Basic Auth,

@@ -1,2 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_datev_token_manager,datev.token manager,model_datev_token,base.group_system,1,1,1,1
+access_datev_oauth_flow_system,datev.oauth.flow system,model_datev_oauth_flow,base.group_system,1,1,1,1

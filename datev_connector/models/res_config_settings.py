@@ -31,6 +31,12 @@ class ResConfigSettings(models.TransientModel):
     datev_last_error = fields.Char(
         related="company_id.datev_last_error", readonly=True,
     )
+    datev_service_accounting = fields.Boolean(
+        related="company_id.datev_service_accounting", readonly=False,
+    )
+    datev_service_hr = fields.Boolean(
+        related="company_id.datev_service_hr", readonly=False,
+    )
     datev_connection_state = fields.Selection(
         [("disconnected", "Disconnected"), ("connected", "Connected")],
         string="Connection Status",
@@ -66,6 +72,12 @@ class ResConfigSettings(models.TransientModel):
         from ..services.datev_api import DatevApiService
 
         service = DatevApiService(self.env, config)
+        if service.get_scope() == "openid profile":
+            raise UserError(_(
+                "Bitte aktivieren Sie zuerst mindestens einen DATEV Datenservice "
+                "(z. B. DATEV Buchungsdatenservice) in den Einstellungen. "
+                "Es werden nur die Scopes angefragt, die Sie tatsächlich nutzen."
+            ))
         auth_url = service.get_authorization_url()
         return {
             "type": "ir.actions.act_url",
