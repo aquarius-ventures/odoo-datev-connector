@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "17.0"]
+    branches: [main, master, "17.0"]
   pull_request:
-    branches: [main, "17.0"]
+    branches: [main, master, "17.0"]
 
 jobs:
   pre-commit:
