@@ -12,7 +12,7 @@
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
         <field name="datev_client_number">1</field>
-        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_mode">sandbox</field>
         <field name="datev_account_number_length">4</field>
     </record>
 
@@ -22,7 +22,7 @@
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
         <field name="datev_client_number">2</field>
-        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_mode">sandbox</field>
         <field name="datev_account_number_length">4</field>
     </record>
 
@@ -32,7 +32,7 @@
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
         <field name="datev_client_number">3</field>
-        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_mode">sandbox</field>
         <field name="datev_account_number_length">4</field>
     </record>
 
@@ -42,7 +42,7 @@
         <field name="country_id" ref="base.de" />
         <field name="datev_consultant_number">455148</field>
         <field name="datev_client_number">4</field>
-        <field name="datev_sandbox_mode" eval="True" />
+        <field name="datev_mode">sandbox</field>
         <field name="datev_account_number_length">4</field>
     </record>
 

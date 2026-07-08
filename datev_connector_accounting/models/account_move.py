@@ -123,7 +123,11 @@ class AccountMove(models.Model):
                 # the user is asked to reconnect via the settings status.
                 _logger.info("DATEV EXTF poll skipped for %s: not connected.", company.name)
                 continue
-            config = self.env["res.config.settings"]._get_datev_config(company)
+            try:
+                config = self.env["res.config.settings"]._get_datev_config(company)
+            except UserError:
+                # e.g. DATEV switched to 'Deaktiviert' while jobs are pending
+                continue
             service = DatevApiService(self.env, config)
 
             for job_url in set(moves.mapped("datev_job_url")):

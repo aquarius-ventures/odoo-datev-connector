@@ -20,8 +20,8 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
         groups="base.group_system",
     )
-    datev_sandbox_mode = fields.Boolean(
-        related="company_id.datev_sandbox_mode",
+    datev_mode = fields.Selection(
+        related="company_id.datev_mode",
         readonly=False,
     )
     datev_consultant_number = fields.Char(
@@ -122,11 +122,11 @@ class ResConfigSettings(models.TransientModel):
                 % (base_url or "<leer>")
             )
 
-    @api.depends("company_id", "datev_client_id")
+    @api.depends("company_id", "datev_client_id", "datev_mode")
     def _compute_datev_connection_state(self):
         for rec in self:
             token = self.env["datev.token"].search([("company_id", "=", rec.company_id.id)], limit=1)
-            if not token or token.state != "connected":
+            if rec.company_id.datev_mode == "off" or not token or token.state != "connected":
                 rec.datev_connection_state = "disconnected"
             elif not rec.company_id.datev_client_verified:
                 # Token vorhanden, aber Berechtigungs-/Mandantenprüfung steht
@@ -146,13 +146,18 @@ class ResConfigSettings(models.TransientModel):
     @api.model
     def _get_datev_config(self, company=None):
         company = (company or self.env.company).sudo()
+        if (company.datev_mode or "off") == "off":
+            raise UserError(_(
+                "DATEV ist für die Firma '%s' deaktiviert. Bitte in den "
+                "Einstellungen zuerst Sandbox oder Produktion wählen."
+            ) % company.name)
         # sudo: credentials are group-restricted (base.group_system), but the
         # API service must also work for e.g. accountants triggering an export
         # or HR users triggering a sync — without exposing the fields to them.
         return {
             "client_id": company.datev_client_id or "",
             "client_secret": company.datev_client_secret or "",
-            "sandbox": bool(company.datev_sandbox_mode),
+            "sandbox": company.datev_mode == "sandbox",
             "company_id": company.id,
         }
 

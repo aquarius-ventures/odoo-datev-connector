@@ -26,6 +26,14 @@
                                 nolabel="1"
                             />
                         </div>
+                        <setting
+                            string="DATEV Datenservices"
+                            name="datev_mode_setting"
+                            help="Deaktiviert → Sandbox (Test) → Produktion. In Produktion
+                                  gelten die Redirect-URL-Richtlinien (nur HTTPS)."
+                        >
+                            <field name="datev_mode" widget="radio" />
+                        </setting>
                         <setting string="Status" name="datev_status_setting">
                             <field
                                 name="datev_connection_state"
@@ -85,13 +93,6 @@
                                     Verbundene Anwendungen in DATEV verwalten/widerrufen
                                 </a>
                             </div>
-                        </setting>
-                        <setting
-                            string="Sandbox Mode"
-                            name="datev_sandbox_setting"
-                            help="Use DATEV sandbox endpoints for testing"
-                        >
-                            <field name="datev_sandbox_mode" />
                         </setting>
                     </block>
 
@@ -201,7 +202,7 @@
                                 type="object"
                                 string="Connect with DATEV"
                                 class="btn-primary"
-                                invisible="datev_connection_state == 'connected'"
+                                invisible="datev_connection_state == 'connected' or datev_mode == 'off'"
                             />
                             <button
                                 name="action_datev_disconnect"

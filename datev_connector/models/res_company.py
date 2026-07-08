@@ -19,7 +19,21 @@ class ResCompany(models.Model):
         string="DATEV Client Secret",
         groups="base.group_system",
     )
-    datev_sandbox_mode = fields.Boolean(string="DATEV Sandbox Mode")
+    datev_mode = fields.Selection(
+        [
+            ("off", "Deaktiviert"),
+            ("sandbox", "Sandbox"),
+            ("production", "Produktion"),
+        ],
+        string="DATEV Datenservices",
+        default="off",
+        help="Deaktiviert = keine DATEV-Kommunikation für diese Firma. "
+             "Sandbox = Test gegen die DATEV Sandbox-Umgebung. "
+             "Produktion = Echtbetrieb (erfordert HTTPS-Redirect-URL und "
+             "produktive App im DATEV Developer Portal).",
+    )
+    # Deprecated, kept for the 17.0.1.2.0 migration only — use datev_mode.
+    datev_sandbox_mode = fields.Boolean(string="DATEV Sandbox Mode (deprecated)")
     datev_consultant_number = fields.Char(string="DATEV Consultant Number")
     datev_client_number = fields.Char(string="DATEV Client Number")
     datev_account_number_length = fields.Selection(
