@@ -1,6 +1,6 @@
 {
     "name": "DATEV Cloud Connector - Payroll",
-    "version": "17.0.1.1.1",
+    "version": "17.0.1.2.0",
     "category": "Human Resources/Payroll",
     "summary": "Export payroll and HR data from Odoo to DATEV LODAS / Lohn und Gehalt",
     "author": "Aquarius Ventures",
@@ -13,7 +13,6 @@
         "views/datev_salary_type_views.xml",
         "views/datev_payroll_run_views.xml",
         "views/datev_employee_mapping_views.xml",
-        "views/datev_payroll_export_views.xml",
         "views/menu.xml",
     ],
     "demo": [

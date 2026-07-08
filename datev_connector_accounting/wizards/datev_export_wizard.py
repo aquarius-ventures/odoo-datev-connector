@@ -41,6 +41,12 @@ class DatevExportWizard(models.TransientModel):
         required=True,
         string="Export Mode",
     )
+    designation = fields.Char(
+        string="Bezeichnung (Header-Feld 17)",
+        help="Name des Buchungsstapels, max. 30 Zeichen — z. B. der Use Case "
+             "für die DATEV-Dateiprüfung ('Ausgangsrechnungen 01/2026'). "
+             "Leer = automatisch aus dem Zeitraum.",
+    )
 
     @api.onchange("date_from", "date_to")
     def _onchange_dates(self):
@@ -70,7 +76,10 @@ class DatevExportWizard(models.TransientModel):
 
         from ..services.extf_generator import ExtfGenerator
 
-        generator = ExtfGenerator(self.env, self.env.company, self.date_from, self.date_to)
+        generator = ExtfGenerator(
+            self.env, self.env.company, self.date_from, self.date_to,
+            designation=self.designation or "",
+        )
         csv_bytes = generator.generate(moves)
 
         if self.export_mode == "download":

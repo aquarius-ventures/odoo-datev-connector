@@ -22,3 +22,14 @@ class TestExtfParser(TransactionCase):
         parser = self._make_parser()
         with self.assertRaises(ValueError):
             parser.parse(b"not a datev file")
+
+    def test_parse_cp1252_file(self):
+        """Real DATEV exports are usually CP1252 — must not crash on umlauts."""
+        sample = (
+            "EXTF;700;21;Buchungsstapel;13;;;;;;1001;10001;4;20250101;20250101;20250131\r\n"
+            "Umsatz (ohne Soll/Haben-Kz);Soll/Haben-Kennzeichen;Konto;Buchungstext\r\n"
+            "100,00;S;1200;Bürobedarf für Großhändler\r\n"
+        ).encode("cp1252")
+        parser = self._make_parser()
+        result = parser.parse(sample)
+        self.assertEqual(result["entries"][0]["Buchungstext"], "Bürobedarf für Großhändler")

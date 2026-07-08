@@ -16,7 +16,12 @@ class ExtfParser:
     """Parses a DATEV EXTF CSV and returns structured data."""
 
     def parse(self, content: bytes) -> dict:
-        text = content.decode("utf-8-sig")  # strip BOM
+        # DATEV exports are usually CP1252; UTF-8 (with BOM) is also allowed.
+        # Try strict UTF-8 first (catches real UTF-8 incl. BOM), then CP1252.
+        try:
+            text = content.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            text = content.decode("cp1252")
         reader = csv.reader(io.StringIO(text), delimiter=";")
         rows = list(reader)
         if not rows or not rows[0][0].startswith("EXTF"):

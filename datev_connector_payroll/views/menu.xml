@@ -33,14 +33,6 @@
     />
 
     <menuitem
-        id="menu_datev_payroll_export"
-        name="Export Payroll to DATEV"
-        parent="menu_datev_payroll"
-        action="action_datev_payroll_export_wizard"
-        sequence="10"
-    />
-
-    <menuitem
         id="menu_datev_employee_mapping"
         name="Employee Mappings"
         parent="menu_datev_payroll"
