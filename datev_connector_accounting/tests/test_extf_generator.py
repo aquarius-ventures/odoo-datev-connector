@@ -155,6 +155,42 @@ class TestExtfGenerator(TransactionCase):
         self.assertNotIn("#", belegfeld)
         self.assertTrue(belegfeld.startswith("RE2025/001"))
 
+    def test_foreign_currency_move_rejected(self):
+        """Non-company-currency moves must be refused with a clear UserError
+        (fields 3-6 Kurs/Basis-Umsatz are intentionally not implemented)."""
+        foreign = (
+            self.env["res.currency"]
+            .with_context(active_test=False)
+            .search([("id", "!=", self.company.currency_id.id)], limit=1)
+        )
+        foreign.active = True
+        partner = self.env["res.partner"].create({"name": "FX Testkunde"})
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": partner.id,
+                "currency_id": foreign.id,
+                "invoice_date": date(2025, 1, 22),
+                "date": date(2025, 1, 22),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "FX Position",
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                            "account_id": self.account_income.id,
+                        },
+                    ),
+                ],
+            }
+        )
+        invoice.action_post()
+        with self.assertRaises(UserError) as ctx:
+            self._make_generator().generate(invoice)
+        self.assertIn(foreign.name, str(ctx.exception))
+
     def test_fiscal_year_span_rejected(self):
         move = self._make_simple_move()
         gen = self._make_generator(date(2024, 12, 1), date(2025, 1, 31))

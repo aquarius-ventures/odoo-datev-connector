@@ -38,11 +38,46 @@ class ResCompany(models.Model):
         company = self.env.ref("datev_connector.company_datev_sandbox_1", raise_if_not_found=False)
         if not company:
             return
+        eur = self.env.ref("base.EUR")
         Move = self.env["account.move"].sudo().with_company(company)
-        if Move.search_count([("company_id", "=", company.id), ("ref", "=like", "DEMO-DATEV-%")]):
+        demo_domain = [("company_id", "=", company.id), ("ref", "=like", "DEMO-DATEV-%")]
+        existing = Move.search(demo_domain)
+        if existing and company.currency_id == eur:
             return
+        if existing:
+            # Self-heal: an earlier loader version installed generic_coa,
+            # which flipped the demo company to USD — recreate in EUR.
+            _logger.info(
+                "DATEV demo: recreating %d demo documents (company was %s, not EUR).",
+                len(existing),
+                company.currency_id.name,
+            )
+            self.env["ir.attachment"].sudo().search(
+                [
+                    ("res_model", "=", "account.move"),
+                    ("res_id", "in", existing.ids),
+                ]
+            ).unlink()
+            existing.button_draft()
+            existing.with_context(force_delete=True).unlink()
 
-        self.env["account.chart.template"].try_loading("generic_coa", company, install_demo=False)
+        # Prefer the real German SKR03 template when l10n_de is installed
+        # (e.g. on the dev instance); fall back to the generic chart.
+        templates = self.env["account.chart.template"]._get_chart_template_mapping()
+        template_code = "de_skr03" if "de_skr03" in templates else "generic_coa"
+        self.env["account.chart.template"].try_loading(template_code, company, install_demo=False)
+        # Loading a chart template sets the company currency to the template
+        # currency (USD for generic_coa) — the DATEV demo must be EUR.
+        if company.currency_id != eur:
+            try:
+                company.currency_id = eur
+            except Exception:
+                _logger.warning(
+                    "DATEV demo: could not switch company %s back to EUR "
+                    "(posted non-demo entries exist?). Demo skipped.",
+                    company.name,
+                )
+                return
         company.write(
             {
                 "datev_service_accounting": True,
@@ -193,8 +228,38 @@ class ResCompany(models.Model):
                 }
             )
             move.action_post()
+
+        # Foreign-currency demo document — intentionally left in DRAFT so the
+        # standard export flow is not blocked. Posting and exporting it shows
+        # the clean rejection (non-EUR moves are refused with a UserError).
+        usd = self.env.ref("base.USD")
+        usd.sudo().active = True
+        Move.create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": customer.id,
+                "company_id": company.id,
+                "currency_id": usd.id,
+                "invoice_date": demo_date,
+                "date": demo_date,
+                "ref": "DEMO-DATEV-FW-001",
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "name": "Fremdwährungs-Testfall (USD) — bewusst Entwurf",
+                            "quantity": 1,
+                            "price_unit": 100.0,
+                            "account_id": acc_rev19.id,
+                            "tax_ids": [(6, 0, [tax_s19.id])],
+                        },
+                    ),
+                ],
+            }
+        )
         _logger.info(
-            "DATEV demo: %d posted demo documents created for %s.",
+            "DATEV demo: %d posted demo documents (+1 draft FX case) created for %s.",
             len(documents),
             company.name,
         )
