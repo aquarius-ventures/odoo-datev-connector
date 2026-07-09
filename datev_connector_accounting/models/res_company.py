@@ -61,17 +61,14 @@ class ResCompany(models.Model):
             existing.button_draft()
             existing.with_context(force_delete=True).unlink()
 
-        # Prefer the real German SKR03 template — but ONLY when l10n_de is
-        # already installed: the template mapping also lists templates of
-        # merely available modules, and try_loading would then trigger a
-        # module install, which is forbidden during registry init/demo load.
-        l10n_de_installed = (
-            self.env["ir.module.module"].sudo().search_count([("name", "=", "l10n_de"), ("state", "=", "installed")])
-        )
-        template_code = "de_skr03" if l10n_de_installed else "generic_coa"
-        self.env["account.chart.template"].try_loading(template_code, company, install_demo=False)
-        # Loading a chart template sets the company currency to the template
-        # currency (USD for generic_coa) — the DATEV demo must be EUR.
+        # l10n_de is a hard module dependency, so the real German SKR03
+        # template (natively EUR) is always available. Never switch an
+        # already-loaded chart (template switching can be blocked); the EUR
+        # enforcement below covers companies that got generic_coa earlier.
+        if not company.chart_template:
+            self.env["account.chart.template"].try_loading("de_skr03", company, install_demo=False)
+        # Safety net for pre-existing generic_coa demo companies: loading that
+        # template flipped the company to USD — the DATEV demo must be EUR.
         if company.currency_id != eur:
             try:
                 company.currency_id = eur

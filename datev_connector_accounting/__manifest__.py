@@ -8,8 +8,10 @@
     "license": "LGPL-3",
     # "account" (Community) statt "account_accountant" (Enterprise): das Modul
     # nutzt nur account.move/account.account/account.tax — Marketplace-Ziel
-    # ist Community-Kompatibilität.
-    "depends": ["datev_connector", "account"],
+    # ist Community-Kompatibilität. l10n_de ist bewusst harte Abhängigkeit:
+    # DATEV ist Deutschland-only, und nur mit deutscher Lokalisierung sind
+    # SKR03-Kontenrahmen und EUR ohne Nachkorrekturen garantiert.
+    "depends": ["datev_connector", "account", "l10n_de"],
     "data": [
         "security/ir.model.access.csv",
         "data/ir_cron.xml",
