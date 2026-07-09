@@ -61,10 +61,14 @@ class ResCompany(models.Model):
             existing.button_draft()
             existing.with_context(force_delete=True).unlink()
 
-        # Prefer the real German SKR03 template when l10n_de is installed
-        # (e.g. on the dev instance); fall back to the generic chart.
-        templates = self.env["account.chart.template"]._get_chart_template_mapping()
-        template_code = "de_skr03" if "de_skr03" in templates else "generic_coa"
+        # Prefer the real German SKR03 template — but ONLY when l10n_de is
+        # already installed: the template mapping also lists templates of
+        # merely available modules, and try_loading would then trigger a
+        # module install, which is forbidden during registry init/demo load.
+        l10n_de_installed = (
+            self.env["ir.module.module"].sudo().search_count([("name", "=", "l10n_de"), ("state", "=", "installed")])
+        )
+        template_code = "de_skr03" if l10n_de_installed else "generic_coa"
         self.env["account.chart.template"].try_loading(template_code, company, install_demo=False)
         # Loading a chart template sets the company currency to the template
         # currency (USD for generic_coa) — the DATEV demo must be EUR.
