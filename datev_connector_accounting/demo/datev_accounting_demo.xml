@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Aufeinander aufbauende Demo-Kette für die Sandbox-Company 455148-1:
+         Kontenrahmen, Demo-Konten (SKR03-Codes), Steuern inkl. Steuerkonten,
+         BU-Schlüssel-/Kontenmappings und sechs gebuchte Belege.
+         Als Python-Loader, weil Buchungen einen Kontenrahmen voraussetzen,
+         der nicht statisch per XML referenzierbar ist. Idempotent. -->
+    <function model="res.company" name="_datev_load_accounting_demo" />
+</odoo>

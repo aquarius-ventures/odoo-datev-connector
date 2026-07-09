@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <!-- Baut auf der Accounting-Demo auf: hängt an jeden DEMO-DATEV-Beleg der
+         Sandbox-Company 455148-1 ein generiertes Beleg-PDF als Haupt-Anhang
+         und aktiviert den Belegbilderservice. Idempotent. -->
+    <function model="res.company" name="_datev_load_documents_demo" />
+</odoo>

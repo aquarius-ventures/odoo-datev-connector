@@ -11,6 +11,9 @@
         "views/account_move_views.xml",
         "views/res_config_settings_views.xml",
     ],
+    "demo": [
+        "demo/datev_documents_demo.xml",
+    ],
     "installable": True,
     "application": False,
     "auto_install": False,

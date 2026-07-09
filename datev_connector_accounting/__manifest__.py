@@ -20,6 +20,9 @@
         "views/res_config_settings_views.xml",
         "views/menu.xml",
     ],
+    "demo": [
+        "demo/datev_accounting_demo.xml",
+    ],
     "installable": True,
     "application": False,
     "auto_install": False,
