@@ -107,7 +107,9 @@ class TestDatevDocuments(TransactionCase):
             self.env,
             {"client_id": "x", "client_secret": "y", "sandbox": True},
         )
-        self.assertIn("datev:accounting:documents", service.get_scope())
+        scopes = service.get_scope().split()
+        self.assertIn("accounting:documents", scopes)
+        self.assertIn("accounting:clients:read", scopes)
         self.company.datev_service_documents = False
-        self.assertNotIn("datev:accounting:documents", service.get_scope())
+        self.assertNotIn("accounting:documents", service.get_scope().split())
         self.company.datev_service_documents = True
