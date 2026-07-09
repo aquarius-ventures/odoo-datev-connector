@@ -10,9 +10,15 @@ class TestDatevDocuments(TransactionCase):
         super().setUpClass()
         cls.company = cls.env.company
         cls.company.datev_service_documents = True
-        cls.journal = cls.env["account.journal"].search([("type", "=", "general")], limit=1)
-        cls.account_cash = cls.env["account.account"].search([("account_type", "=", "asset_cash")], limit=1)
-        cls.account_income = cls.env["account.account"].search([("account_type", "=", "income")], limit=1)
+        cls.journal = cls.env["account.journal"].search(
+            [("type", "=", "general"), ("company_id", "=", cls.company.id)], limit=1
+        )
+        cls.account_cash = cls.env["account.account"].search(
+            [("account_type", "=", "asset_cash"), ("company_id", "=", cls.company.id)], limit=1
+        )
+        cls.account_income = cls.env["account.account"].search(
+            [("account_type", "=", "income"), ("company_id", "=", cls.company.id)], limit=1
+        )
 
     def _make_move_with_attachment(self):
         move = self.env["account.move"].create(

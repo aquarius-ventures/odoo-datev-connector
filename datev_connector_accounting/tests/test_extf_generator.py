@@ -9,10 +9,18 @@ class TestExtfGenerator(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        cls.journal = cls.env["account.journal"].search([("type", "=", "general")], limit=1)
-        cls.account_cash = cls.env["account.account"].search([("account_type", "=", "asset_cash")], limit=1)
-        cls.account_income = cls.env["account.account"].search([("account_type", "=", "income")], limit=1)
-        cls.account_receivable = cls.env["account.account"].search([("account_type", "=", "asset_receivable")], limit=1)
+        cls.journal = cls.env["account.journal"].search(
+            [("type", "=", "general"), ("company_id", "=", cls.company.id)], limit=1
+        )
+        cls.account_cash = cls.env["account.account"].search(
+            [("account_type", "=", "asset_cash"), ("company_id", "=", cls.company.id)], limit=1
+        )
+        cls.account_income = cls.env["account.account"].search(
+            [("account_type", "=", "income"), ("company_id", "=", cls.company.id)], limit=1
+        )
+        cls.account_receivable = cls.env["account.account"].search(
+            [("account_type", "=", "asset_receivable"), ("company_id", "=", cls.company.id)], limit=1
+        )
 
     def _make_generator(self, date_from=None, date_to=None):
         from odoo.addons.datev_connector_accounting.services.extf_generator import ExtfGenerator
