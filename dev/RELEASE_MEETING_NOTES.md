@@ -27,7 +27,7 @@ Schnittstellenvorgaben.
 - Odoo `res.company` ⟷ DATEV Mandant (`{Beraternummer}-{Mandantennummer}`).
   Genau ein Token pro Company (`datev.token`, SQL-Unique).
 - Zugriff auf Token und Client-Secret: nur `base.group_system`
-  (Feld-Level-Groups + Modell-ACL). Buchhalter (account.group_account_user)
+  (Feld-Level-Groups + Modell-ACL). Buchhalter (account.group_account_invoice)
   können Exporte auslösen, sehen aber keine Credentials; HR-Daten
   zusätzlich durch `hr.group_hr_user` geschützt.
 - Vor jedem Datentransfer Berechtigungsprüfung:
@@ -85,7 +85,8 @@ Schnittstellenvorgaben.
   übertragen; GUID von Odoo erzeugt → keine Dubletten; Metadata mit allen
   drei Ablageebenen category/folder/register; Beleglink Spalte 20
   `BEDI "<guid>"`), der **Belegbilderservice** ist optional pro Firma
-  zuschaltbar (eigener Scope datev:accounting:documents), sowie der
+  zuschaltbar (eigene Scopes accounting:documents + accounting:clients:read
+  — anders als bei extf-files/clients ohne datev:-Präfix), sowie der
   **Lohnaustauschdatenservice (hr:exchange)** für Personalstammdaten.
   Der frühere LODAS-ASCII-Export wurde entfernt; ein späterer
   Bewegungsdaten-Transfer läuft über hr:exchange `month-records`

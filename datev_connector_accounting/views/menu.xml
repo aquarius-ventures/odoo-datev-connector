@@ -5,7 +5,7 @@
         name="Accounting"
         parent="datev_connector.menu_datev_root"
         sequence="10"
-        groups="account.group_account_user"
+        groups="account.group_account_invoice"
     />
 
     <menuitem
