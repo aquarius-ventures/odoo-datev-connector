@@ -46,7 +46,23 @@
                     role="alert"
                     invisible="datev_job_state != 'failed'"
                 >
+                    <strong>DATEV-Import fehlgeschlagen: </strong>
                     <field name="datev_job_error" readonly="1" />
+                </div>
+                <div
+                    class="alert alert-info mb-0"
+                    role="alert"
+                    invisible="datev_job_state != 'pending'"
+                >
+                    DATEV verarbeitet den Buchungsstapel — der Status wird automatisch
+                    aktualisiert (frühestens 60 s nach dem Upload).
+                </div>
+                <div
+                    class="alert alert-success mb-0"
+                    role="alert"
+                    invisible="datev_job_state != 'succeeded'"
+                >
+                    In DATEV übernommen — der Buchungsstapel wurde erfolgreich verarbeitet.
                 </div>
             </xpath>
         </field>
@@ -61,6 +77,28 @@
         <field
             name="code"
         >action = records.action_datev_refresh_job_status()</field>
+    </record>
+
+    <!-- Customer invoices / vendor bills list (the list Community users
+         actually see — view_move_tree is the journal-entries list). -->
+    <record id="view_invoice_tree_datev" model="ir.ui.view">
+        <field name="name">account.invoice.tree.datev</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='ref']" position="after">
+                <field name="datev_exported" optional="hide" />
+                <field
+                    name="datev_job_state"
+                    string="DATEV"
+                    optional="show"
+                    widget="badge"
+                    decoration-success="datev_job_state == 'succeeded'"
+                    decoration-warning="datev_job_state == 'pending'"
+                    decoration-danger="datev_job_state == 'failed'"
+                />
+            </xpath>
+        </field>
     </record>
 
     <record id="view_move_list_datev" model="ir.ui.view">
